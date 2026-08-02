@@ -1,0 +1,20 @@
+{
+  "format": "quiz-source-v1",
+  "deck": {
+    "id": "mini-quiz",
+    "title": "Mini Quiz"
+  },
+  "questions": [
+    {
+      "prompt": "First?",
+      "choices": ["A", "B"],
+      "correct": 1
+    },
+    {
+      "prompt": "Pi?",
+      "choices": ["2", "3.14", "4"],
+      "correct": 1,
+      "explanation": "Approx."
+    }
+  ]
+}

@@ -63,3 +63,14 @@ Payload order is:
 - Stream-validate the full index before session start.
 - Validate each question descriptor, UTF-8 field, and payload arithmetic before presentation.
 - Re-read only the selected index entry and record when loading one question; do not retain the full deck or full index in RAM.
+
+## Identity derivation
+- `deck_identity`: first 16 bytes of `sha256("quiz-deck-id-v1\0" + deck.id UTF-8 bytes)`.
+- Host-source `deck.id` MUST be 1-64 UTF-8 bytes and MUST NOT contain NUL.
+- `revision_identity`: first 16 bytes of `sha256("quiz-revision-v1\0" + deck_identity + question_count:u32le + canonical question sequence)`.
+- Canonical question sequence, in ordinal order: `prompt:u16le+bytes`, `choice_count:u8`, each `choice:u16le+bytes`, `correct_choice:u8`, `explanation:u16le+bytes`.
+
+## Host conversion boundary
+- Canonical JSON-to-`.quiz` conversion is a host-side responsibility implemented by `tools/quiz/convert_quiz.py`.
+- Firmware MUST NOT parse CSV or JSON decks on-device.
+- Deploy converted decks by copying `.quiz` artifacts to root-level `/quiz/*.quiz` on the SD card.
