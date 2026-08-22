@@ -1,0 +1,14 @@
+{
+  "format": "quiz-source-v1",
+  "deck": {
+    "id": "bounds-deck",
+    "title": "Bounds"
+  },
+  "questions": [
+    {
+      "prompt": "Only one?",
+      "choices": ["A"],
+      "correct": 0
+    }
+  ]
+}
