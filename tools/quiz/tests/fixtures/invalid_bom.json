@@ -1,0 +1,5 @@
+﻿{
+  "format": "quiz-source-v1",
+  "deck": {"id": "bom", "title": "BOM"},
+  "questions": [{"prompt": "Q?", "choices": ["A", "B"], "correct": 0}]
+}

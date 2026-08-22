@@ -1,0 +1,17 @@
+{
+  "format": "quiz-source-v1",
+  "surprise": true,
+  "deck": {
+    "id": "bad-fields",
+    "title": "Bad Fields",
+    "extra": 1
+  },
+  "questions": [
+    {
+      "prompt": "Bad correct?",
+      "extra": "oops",
+      "choices": ["A", "B"],
+      "correct": true
+    }
+  ]
+}
