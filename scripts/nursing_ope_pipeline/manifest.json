@@ -1,0 +1,550 @@
+{
+  "schema": "reader-quiz.official-ope-manifest.v1",
+  "notes": [
+    "The 37-entry checklist comes from FUDEN's public index for 'Recopilatorio de Exámenes (2022-2024). 37 últimos exámenes de OPE de Enfermería'.",
+    "Use FUDEN only as a checklist; prefer official administration PDFs for exam and answer-key sources.",
+    "Entries with official_urls=null still need original source discovery before download/parse."
+  ],
+  "checklist_source": "https://www.fuden.es/wp-content/uploads/2025/07/Indice-RE_Enfermeria_2025.pdf",
+  "entries": [
+    {
+      "id": "andalucia-2023",
+      "jurisdiction": "Andalucía",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "OEP extraordinaria Decreto-ley 12/2022. Examen 2023",
+      "official_urls": {
+        "exam": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-ope_fichero/2023/56042_enfermera_sas.pdf",
+        "answers": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-mediafile_sasdocumento/2024/def_enfermera_sas_2023.pdf",
+        "procedure": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/profesionales/ofertas-de-empleo/oferta-de-empleo-publico-puestos-base/oep-extraordinaria-decreto-ley-122022-centros-sas/cuadro-de-evolucion-concurso-oposicion-centros-sas/enfermeroa"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official SAS Enfermero/a OEP extraordinaria Decreto-ley 12/2022 page; uses definitive answer key."
+    },
+    {
+      "id": "aragon-2022-primer-llamamiento",
+      "jurisdiction": "Aragón",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022. Primer llamamiento",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "aragon-2022-llamamiento-extraordinario",
+      "jurisdiction": "Aragón",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022. Llamamiento extraordinario",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "asturias-2024",
+      "jurisdiction": "Asturias",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "AsturSalud search surfaced official Enfermero/a PDFs, but the candidate exam URL downloaded a merit-score list, not an exam booklet; source reset pending correct exam/answer URLs."
+    },
+    {
+      "id": "baleares-2023-primer-llamamiento",
+      "jurisdiction": "Baleares",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023. Primer llamamiento",
+      "official_urls": {
+        "exam": "https://www.caib.es/seucaib/ca/arxiuServlet?id=5961245",
+        "answers": "https://www.caib.es/seucaib/ca/arxiuServlet?id=5961241",
+        "procedure": "https://www.caib.es/seucaib/es/tramites/tramite/5226887"
+      },
+      "corpus": "baleares_official_primary"
+    },
+    {
+      "id": "baleares-2024-segundo-llamamiento",
+      "jurisdiction": "Baleares",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024. Segundo llamamiento",
+      "official_urls": {
+        "exam": "https://www.caib.es/seucaib/ca/arxiuServlet?id=6025864",
+        "answers": "https://www.caib.es/seucaib/ca/arxiuServlet?id=6025867",
+        "procedure": "https://www.caib.es/seucaib/es/tramites/tramite/5226887"
+      },
+      "corpus": "baleares_official_primary"
+    },
+    {
+      "id": "canarias-2024-1",
+      "jurisdiction": "Canarias",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024 (1)",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "canarias-2024-2",
+      "jurisdiction": "Canarias",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024 (2)",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "canarias-2024-3",
+      "jurisdiction": "Canarias",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024 (3)",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "canarias-2024-4",
+      "jurisdiction": "Canarias",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024 (4)",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "canarias-2024-5",
+      "jurisdiction": "Canarias",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024 (5)",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "castilla-la-mancha-2022-primer-llamamiento",
+      "jurisdiction": "Castilla-La Mancha",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022. Primer llamamiento",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "castilla-la-mancha-2022-segundo-llamamiento",
+      "jurisdiction": "Castilla-La Mancha",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022. Segundo llamamiento",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "castilla-la-mancha-2023",
+      "jurisdiction": "Castilla-La Mancha",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "castilla-y-leon-2023-promocion-interna",
+      "jurisdiction": "Castilla y León",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Convocatorias 2022. Promoción interna. Ejercicio 2023",
+      "official_urls": {
+        "exam": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-promocion-interna.ficheros/2420748-Examen%20Enfermer%C3%ADa%20PI%202023.pdf",
+        "answers": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-promocion-interna.ficheros/2420348-Plantilla%20respuestas%20Enfermer%C3%ADa%20PI.pdf",
+        "procedure": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-promocion-interna"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official SACYL Enfermero/a promoción interna page; exercise and answer key linked directly."
+    },
+    {
+      "id": "castilla-y-leon-2023-primer-llamamiento",
+      "jurisdiction": "Castilla y León",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023. Primer llamamiento",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "castilla-y-leon-2023-segundo-llamamiento",
+      "jurisdiction": "Castilla y León",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023. Segundo llamamiento",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "castilla-y-leon-2023-acceso-libre",
+      "jurisdiction": "Castilla y León",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Convocatorias 2022. Acceso libre. Ejercicio 22/10/2023",
+      "official_urls": {
+        "exam": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-libre.ficheros/2568508-Examen%20Enfermer%C3%ADa%2022_10_23.pdf",
+        "answers": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-libre.ficheros/2568509-Plantilla%20respuestas%20Enfermer%C3%ADa.pdf",
+        "procedure": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-libre"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official SACYL Enfermero/a libre page; regular 22/10/2023 exercise and answer key linked directly."
+    },
+    {
+      "id": "euskadi-2022",
+      "jurisdiction": "Euskadi",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "euskadi-2023",
+      "jurisdiction": "Euskadi",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "extremadura-2022-primer-llamamiento",
+      "jurisdiction": "Extremadura",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Ejercicio fase oposición 2022. Primer llamamiento",
+      "official_urls": {
+        "exam": "https://saludextremadura.ses.es/seleccionpersonal/publicaciones/mostrarFichero/1498",
+        "answers": "https://saludextremadura.ses.es/seleccionpersonal/publicaciones/mostrarFichero/1499",
+        "procedure": "https://saludextremadura.ses.es/seleccionpersonal/"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official Servicio Extremeño de Salud selection-personnel publication files for Enfermero/a exercise and answer key."
+    },
+    {
+      "id": "extremadura-2022-segundo-llamamiento",
+      "jurisdiction": "Extremadura",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Ejercicio fase oposición 2022. Segundo llamamiento",
+      "official_urls": {
+        "exam": "https://saludextremadura.ses.es/seleccionpersonal/publicaciones/mostrarFichero/1500",
+        "answers": "https://saludextremadura.ses.es/seleccionpersonal/publicaciones/mostrarFichero/1501",
+        "procedure": "https://saludextremadura.ses.es/seleccionpersonal/"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official Servicio Extremeño de Salud selection-personnel publication files for second-call Enfermero/a exercise and answer key."
+    },
+    {
+      "id": "galicia-2023",
+      "jurisdiction": "Galicia",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Clase ATS/DUE. Ejercicio fase oposición 2023",
+      "official_urls": {
+        "exam": "https://sergas.gal/Recursos-Humanos/Documents/24160/ATS%20CAS.pdf",
+        "answers": "https://sergas.gal/Recursos-Humanos/Documents/24982/Plantilla%20definitiva_%20ATS-DUE2.pdf",
+        "procedure": "https://www.sergas.es/Recursos-Humanos/Exames?idioma=es"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official SERGAS exercise page redirects the Clase ATS/DUE exam PDF; official definitive answer-key page redirects the answer PDF."
+    },
+    {
+      "id": "la-rioja-2022",
+      "jurisdiction": "La Rioja",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "madrid-2023",
+      "jurisdiction": "Madrid",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Enfermería A2. Primer ejercicio histórico 2023",
+      "official_urls": {
+        "exam": "https://www.comunidad.madrid/docs/assets/2023/06/06/1399-2023_historico_primer_ejercicio.pdf",
+        "answers": "https://www.comunidad.madrid/docs/assets/2023/06/06/1399-2023_historico_plantilla.pdf",
+        "procedure": "https://www.comunidad.madrid/empleo/enfermeria-a2"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official Comunidad de Madrid Enfermería A2 page; historical first exercise and answer key."
+    },
+    {
+      "id": "madrid-2024",
+      "jurisdiction": "Madrid",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Examen 2024",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "maec-2022",
+      "jurisdiction": "Ministerio de Asuntos Exteriores",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "defensa-2022",
+      "jurisdiction": "Ministerio de Defensa",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "defensa-2023-acceso-libre",
+      "jurisdiction": "Ministerio de Defensa",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "OEP 2023. Acceso libre",
+      "official_urls": {
+        "exam": "https://www.defensa.gob.es/Galerias/portalservicios/procesos/ARCHIVOS_2024/ESTATUTARIOS/2024-03-25-3-CUESTIONARIO_PREGUNTAS_EJERCICIO_OPOSICION_ACCESO_LIBRE_GRUPO_A2_ENFERMEROS.pdf",
+        "answers": "https://www.defensa.gob.es/Galerias/portalservicios/procesos/ARCHIVOS_2024/ESTATUTARIOS/2024-04-01-2-PLANTILLA_DEFINITIVA_DE_RESPUESTAS_A2_ENFERMERIA_ACC_LIBRE.pdf",
+        "procedure": "https://www.defensa.gob.es/portalservicios/procesos/personalestatutario/ofertas_empleo_publico/2023/"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official Ministerio de Defensa OEP 2023 statutory health staff access libre documents."
+    },
+    {
+      "id": "defensa-2023-promocion-interna",
+      "jurisdiction": "Ministerio de Defensa",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "OEP 2023. Promoción interna",
+      "official_urls": {
+        "exam": "https://www.defensa.gob.es/Galerias/portalservicios/procesos/ARCHIVOS_2024/ESTATUTARIOS/2024-03-21-4-CUESTIONARIO_PREGUNTAS_EJERC_OPOSIC_PROMOCION_INTERNA_ENFERMERA_20_MARZO_2024.pdf",
+        "answers": "https://www.defensa.gob.es/Galerias/portalservicios/procesos/ARCHIVOS_2024/ESTATUTARIOS/2024-03-21-2-PLANTILLA_CORRECTORA_20MAR24_ENFERMER.pdf",
+        "procedure": "https://www.defensa.gob.es/portalservicios/procesos/personalestatutario/ofertas_empleo_publico/2023/"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official Ministerio de Defensa OEP 2023 statutory health staff promoción interna documents; answer key is provisional."
+    },
+    {
+      "id": "murcia-2023-estatutario",
+      "jurisdiction": "Murcia",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023 (Estatutario)",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "murcia-2023-funcionario",
+      "jurisdiction": "Murcia",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023 (Funcionario)",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "navarra-2022-primer-llamamiento",
+      "jurisdiction": "Navarra",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022. Primer llamamiento",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "navarra-2022-segundo-llamamiento",
+      "jurisdiction": "Navarra",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "Examen 2022. Segundo llamamiento",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    },
+    {
+      "id": "navarra-2024",
+      "jurisdiction": "Navarra",
+      "category": "Enfermero/enfermera",
+      "year": 2024,
+      "label": "Concurso-oposición 2024",
+      "official_urls": {
+        "exam": "https://www.navarra.es/documents/48192/41615861/EXAMEN+FINAL.pdf/38805387-b329-2d07-de35-dc2a00eadf1a?t=1748781323934",
+        "answers": "https://www.navarra.es/documents/48192/41615861/PLANTILLA+RESPUESTAS.pdf/33ced847-7136-c8cc-3800-193073cfb61d?t=1748781327307",
+        "procedure": "https://www.navarra.es/es/tramites/on/-/line/enfermeria-concurso-oposicion-2024"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official Gobierno de Navarra concurso-oposición 2024 page; exam and answer-key PDFs linked directly."
+    },
+    {
+      "id": "valencia-2022",
+      "jurisdiction": "Valencia",
+      "category": "Enfermero/enfermera",
+      "year": 2022,
+      "label": "OPE estabilización C0/30/2022. Enfermero/a",
+      "official_urls": {
+        "exam": "https://chguv.san.gva.es/documents/10184/2197724/CO_30_22+-+ENFERMERO.pdf/7ad0a225-8fc0-4251-9eb9-267f3c2f83fb",
+        "answers": "https://chguv.san.gva.es/documents/10184/2163313/Plantilla+inicial+de+respuestas_Enfermero.pdf/a06d2fd1-c65a-4fc6-839d-68a33f406d41",
+        "procedure": "https://www.san.gva.es/es/web/recursos-humans/oferta-empleo-publico-22"
+      },
+      "corpus": "fuden_2022_2024_checklist",
+      "source_note": "Official Generalitat/Consorcio Hospital General Universitario de Valencia OPE C0/30/2022 Enfermero/a PDFs."
+    },
+    {
+      "id": "valencia-2023",
+      "jurisdiction": "Valencia",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Examen 2023",
+      "official_urls": null,
+      "corpus": "fuden_2022_2024_checklist"
+    }
+  ],
+  "candidate_2025_or_later": [
+    {
+      "id": "andalucia-oep-2025-acceso-libre",
+      "jurisdiction": "Andalucía",
+      "category": "Enfermero/enfermera",
+      "year": 2025,
+      "label": "OEP 2025. Acceso libre",
+      "source_note": "Official SAS cuadro de evolución for Enfermero/a OEP 2025; exam held 17/05/2025, definitive answer key 05/12/2025.",
+      "official_urls": {
+        "exam": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-mediafile_sasdocumento/2025/20250517_enfermero-a.pdf",
+        "answers": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-mediafile_sasdocumento/2025/enfemera_l_plantdef.pdf",
+        "procedure": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/profesionales/ofertas-de-empleo/oferta-de-empleo-publico-puestos-base/convocatorias-oep-2025/cuadro-de-evolucion/enfermeroa"
+      },
+      "corpus": "official_general_nursing_recency_candidate"
+    },
+    {
+      "id": "andalucia-oep-2025-aplazada",
+      "jurisdiction": "Andalucía",
+      "category": "Enfermero/enfermera",
+      "year": 2025,
+      "label": "OEP 2025. Prueba aplazada",
+      "source_note": "Official SAS cuadro de evolución for Enfermero/a OEP 2025; postponed exam documents dated 28/07/2025, definitive answer key 05/12/2025.",
+      "official_urls": {
+        "exam": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-mediafile_sasdocumento/2025/enfermero_a_prueba_aplazada.pdf",
+        "answers": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-mediafile_sasdocumento/2025/oep2025_enfermera_def_l_aplazada.pdf",
+        "procedure": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/profesionales/ofertas-de-empleo/oferta-de-empleo-publico-puestos-base/convocatorias-oep-2025/cuadro-de-evolucion/enfermeroa"
+      },
+      "corpus": "official_general_nursing_recency_candidate"
+    },
+    {
+      "id": "aragon-conv-2025-exam-2026",
+      "jurisdiction": "Aragón",
+      "category": "Enfermero/enfermera",
+      "year": 2026,
+      "label": "Convocatoria 2025; examen 15/02/2026",
+      "source_note": "Colegio Oficial de Enfermería de Huesca links to Servicio Aragonés de Salud official documents.",
+      "official_urls": {
+        "exam": "https://www.aragon.es/documents/d/guest/20260215_examen_opos_2025_enfermeros",
+        "answers": "https://www.aragon.es/documents/d/guest/20260215_respuestas_examen_opos_2025_enfermeros",
+        "procedure": "https://www.aragon.es/-/enfermeros.-oposiciones.-convocatoria-2025.-servicio-aragon%C3%A9s-de-salud"
+      },
+      "corpus": "official_general_nursing_recency_candidate"
+    },
+    {
+      "id": "castilla-y-leon-estabilizacion-2025-aplazado",
+      "jurisdiction": "Castilla y León",
+      "category": "Enfermero/enfermera",
+      "year": 2025,
+      "label": "Estabilización Ley 20/2021. Ejercicio aplazado 15/03/2025",
+      "source_note": "Official SACYL concurso-oposición Enfermero/a stabilization documents.",
+      "official_urls": {
+        "exam": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/proceso-excepcional-estabilizacion-ley-20-2021-28-diciembre/diplomados-especialistas-diplomados-sanitarios-tecnicos-sup/enfermero-concurso-oposicion.ficheros/3174618-EXAMEN%20ENFERMER%C3%8DA%20APLAZADO%2015_03_2025.pdf",
+        "answers": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/proceso-excepcional-estabilizacion-ley-20-2021-28-diciembre/diplomados-especialistas-diplomados-sanitarios-tecnicos-sup/enfermero-concurso-oposicion.ficheros/3174617-PlantillaRespu_enfermeria.pdf",
+        "procedure": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/proceso-excepcional-estabilizacion-ley-20-2021-28-diciembre/diplomados-especialistas-diplomados-sanitarios-tecnicos-sup/enfermero-concurso-oposicion"
+      },
+      "corpus": "official_general_nursing_recency_candidate"
+    },
+    {
+      "id": "defensa-oep-2025-acceso-libre",
+      "jurisdiction": "Ministerio de Defensa",
+      "category": "Enfermero/enfermera",
+      "year": 2025,
+      "label": "OEP 2025. Acceso libre",
+      "source_note": "Official Ministerio de Defensa statutory health staff OEP 2025 documents.",
+      "official_urls": {
+        "exam": "https://www.defensa.gob.es/Galerias/portalservicios/procesos/OFERTAS_DE_EMPLEO_PUBLICO/ESTATUTARIOS/OEP_2025/OEP_2025_AL/OEP2025_AL_SAN_SUBGRUPO_A2/3_A2_CUESTIONARIO_PREGUNTAS_ENFERM.pdf",
+        "answers": "https://www.defensa.gob.es/Galerias/portalservicios/procesos/OFERTAS_DE_EMPLEO_PUBLICO/ESTATUTARIOS/OEP_2025/OEP_2025_AL/OEP2025_AL_SAN_SUBGRUPO_A2/2_PLANTILLA_PROV_RESPUESTAS_A2_ENFERM.pdf"
+      },
+      "corpus": "official_general_nursing_recency_candidate"
+    },
+    {
+      "id": "sanidad-egoa-2025-enfermeria",
+      "jurisdiction": "Ministerio de Sanidad",
+      "category": "Enfermería",
+      "year": 2025,
+      "label": "EGOA 2025. Área de Enfermería",
+      "source_note": "Official Ministerio de Sanidad EGOA 2025 area of nursing documents; adjacent but not the same statutory-service OPE category.",
+      "official_urls": {
+        "exam": "https://www.sanidad.gob.es/servCiudadanos/oposicionesConcursos/ofertasEmpleo/personalFuncionario/2025/docs/EGOA/EGOA2025_EJ1_EnfCuadernillo.pdf",
+        "answers": "https://www.sanidad.gob.es/servCiudadanos/oposicionesConcursos/ofertasEmpleo/personalFuncionario/2025/docs/EGOA/EGOA2025_EJ1_EnfDefPlantilla.pdf"
+      },
+      "corpus": "adjacent_enfermeria_excluded_by_default"
+    },
+    {
+      "id": "madrid-sermas-2025-exam-2026-junio",
+      "jurisdiction": "Madrid",
+      "category": "Enfermero/enfermera",
+      "year": 2026,
+      "label": "SERMAS Enfermería 2025. Cuestionario 18/06/2026",
+      "source_note": "Official Comunidad de Madrid SERMAS Enfermería 2025 page; exam held in 2026, provisional answer key only at capture time.",
+      "official_urls": {
+        "exam": "https://www.comunidad.madrid/docs/2026-06/rrhh-ope_3867_enfermeras_2026-06-18_cuestinario.pdf?VersionId=9F6TT5GMjvlhNrdKet53uzizW0bm5Uyd",
+        "answers": "https://www.comunidad.madrid/docs/2026-06/rrhh-ope_3867_enfermeras_2026-06-18_plantillacorrectoraexamen.pdf?VersionId=TlwDtcF5hF73_7Lqq4x4iB4fpyeLnBuv",
+        "procedure": "https://www.comunidad.madrid/salud/proceso-selectivo-categoria-enfermeria-2025"
+      },
+      "corpus": "official_general_nursing_recency_candidate"
+    }
+  ],
+  "additional_official_sources": [
+    {
+      "id": "andalucia-2023-aplazada",
+      "jurisdiction": "Andalucía",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "OEP extraordinaria Decreto-ley 12/2022. Prueba aplazada",
+      "source_note": "Official SAS Enfermero/a OEP extraordinaria Decreto-ley 12/2022 page; additional postponed exam, kept separate from FUDEN checklist entries.",
+      "official_urls": {
+        "exam": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-mediafile_sasdocumento/2024/20230123_Cuadernillo_Examen_Aplz_Enfermero.pdf",
+        "answers": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/sites/default/files/sincfiles/wsas-media-mediafile_sasdocumento/2024/def_enfermera_aplazada_sas_2023.pdf",
+        "procedure": "https://www.sspa.juntadeandalucia.es/servicioandaluzdesalud/profesionales/ofertas-de-empleo/oferta-de-empleo-publico-puestos-base/oep-extraordinaria-decreto-ley-122022-centros-sas/cuadro-de-evolucion-concurso-oposicion-centros-sas/enfermeroa"
+      },
+      "corpus": "official_general_nursing_additional_source"
+    },
+    {
+      "id": "castilla-y-leon-2023-acceso-libre-aplazado",
+      "jurisdiction": "Castilla y León",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "Convocatorias 2022. Acceso libre. Ejercicio aplazado 2023",
+      "source_note": "Official SACYL Enfermero/a libre page; postponed exam kept separate from checklist entries.",
+      "official_urls": {
+        "exam": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-libre.ficheros/2587197-Cuadernillo%20preguntas%20ejercicio%20aplazado%20fase%20de%20oposici%C3%B3n%20Enfermer%C3%ADa.pdf",
+        "answers": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-libre.ficheros/2587198-Plantilla%20respuestas%20correctas%20-%20examen%20aplazado%20Enfermer%C3%ADa.pdf",
+        "procedure": "https://www.saludcastillayleon.es/profesionales/es/procesos_selectivos/convocatorias-2022-procesos-ordinarios-reposicion/categorias/enfermero-libre"
+      },
+      "corpus": "official_general_nursing_additional_source"
+    },
+    {
+      "id": "canarias-estabilizacion-2023-repertorio-enfermera",
+      "jurisdiction": "Canarias",
+      "category": "Enfermero/enfermera",
+      "year": 2023,
+      "label": "SCS estabilización 2022. Repertorio provisional Enfermera/o",
+      "source_note": "Official Servicio Canario de la Salud provisional question repertory with inline correct answers; not an exam booklet/answer-key pair, so kept as an additional separate source.",
+      "official_urls": {
+        "exam": "https://www3.gobiernodecanarias.org/sanidad/scs/content/38ee54c1-6ddc-11ee-80be-918bf360ca08/1.Certificaci%C3%B3n%20repertorio%20provisional%20%20Enfermera_o.pdf",
+        "answers": "https://www3.gobiernodecanarias.org/sanidad/scs/content/38ee54c1-6ddc-11ee-80be-918bf360ca08/1.Certificaci%C3%B3n%20repertorio%20provisional%20%20Enfermera_o.pdf",
+        "procedure": "https://www3.gobiernodecanarias.org/sanidad/scs/contenidoGenerico.jsp?idCarpeta=b8cf85ba-fc1a-11dd-a72f-93771b0e33f6&idDocument=c0120224-4e36-11ee-ad2e-999944865aa9"
+      },
+      "corpus": "official_general_nursing_additional_source"
+    }
+  ]
+}
