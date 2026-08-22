@@ -100,8 +100,28 @@ After the last source sweep, the manifest contains:
 - 3 additional official sources kept separate from the checklist.
 
 The current normalized/review workflow intentionally stops before `.quiz` conversion. The next human-owned step is
-reviewing `.cache/nursing_ope/review_queue.json`, fixing or excluding low-quality items, and only then feeding reviewed
-normalized JSON into a future `.quiz` converter.
+reviewing `.cache/nursing_ope/review_queue.json`, fixing or excluding low-quality items, then adapting only ready
+`reader-quiz.exam-normalized.v1` files into `quiz-source-v1` JSON before running the `.quiz` converter.
+
+```bash
+python3 scripts/nursing_ope_pipeline/normalized_to_quiz_source.py \
+  .cache/nursing_ope/normalized/baleares-2023-primer-llamamiento.json \
+  .cache/nursing_ope/quiz-source/baleares-2023-primer-llamamiento.json
+
+python3 tools/quiz/convert_quiz.py \
+  .cache/nursing_ope/quiz-source/baleares-2023-primer-llamamiento.json \
+  .cache/nursing_ope/quiz/baleares-2023-primer-llamamiento.quiz
+```
+
+Adapter policy:
+
+- accepts only `reader-quiz.exam-normalized.v1` input;
+- rejects duplicate JSON object keys before validation, including nested objects;
+- exports only ready questions with four official choices and omits officially annulled questions;
+- rejects any exam with `include_by_default: false`, any non-annulled question that still needs review, malformed
+  `answer.choice_id` mappings, or an empty post-annulment result;
+- creates missing output parent directories and publishes deterministic pretty UTF-8 JSON with a trailing newline via
+  same-directory atomic replacement, preserving an existing output unless the replacement fully succeeds.
 
 ## Review queue shape
 
