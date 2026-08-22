@@ -1,0 +1,15 @@
+{
+  "format": "quiz-source-v1",
+  "format": "not-allowed-twice",
+  "deck": {
+    "id": "duplicate-root",
+    "title": "Duplicate"
+  },
+  "questions": [
+    {
+      "prompt": "Question?",
+      "choices": ["A", "B"],
+      "correct": 0
+    }
+  ]
+}
