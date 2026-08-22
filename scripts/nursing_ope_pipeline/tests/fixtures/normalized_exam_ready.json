@@ -1,0 +1,9 @@
+{
+  "schema": "reader-quiz.exam-normalized.v1",
+  "exam": {"id": "baleares-2023-primer-llamamiento", "title": "Baleares Ready Deck", "include_by_default": true},
+  "questions": [
+    {"prompt": "¿Cuál es la capital de Illes Balears?", "choices": [{"id": "A", "text": "Palma"}, {"id": "B", "text": "Mahón"}, {"id": "C", "text": "Ibiza"}, {"id": "D", "text": "Manacor"}], "answer": {"choice_id": "A", "status": "official"}, "quality_flags": []},
+    {"prompt": "Selecciona la vía de administración enteral.", "choices": [{"id": "A", "text": "Intravenosa"}, {"id": "B", "text": "Oral"}, {"id": "C", "text": "Intradérmica"}, {"id": "D", "text": "Subcutánea"}], "answer": {"choice_id": "B", "status": "official"}, "quality_flags": []},
+    {"prompt": "Pregunta anulada oficialmente.", "choices": [{"id": "A", "text": "Opción 1"}, {"id": "B", "text": "Opción 2"}, {"id": "C", "text": "Opción 3"}, {"id": "D", "text": "Opción 4"}], "answer": {"choice_id": null, "status": "annulled"}, "quality_flags": []}
+  ]
+}
