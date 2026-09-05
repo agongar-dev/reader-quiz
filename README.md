@@ -12,7 +12,7 @@ CrossPoint is open-source e-reader firmware - community-built, fully hackable, f
 
 ## What can CrossPoint do?
 
-- **Reader engine**: EPUB 2/3 rendering with embedded-style option, image handling, hyphenation, kerning, chapter navigation, footnotes, bookmarks, dictionary lookups ([StarDict](docs/dictionary.md)), go-to-percent, auto page turn, orientation control, focus reading, KOReader progress sync and more. 
+- **Reader engine**: EPUB 2/3 rendering with embedded-style option, image handling, hyphenation, kerning, chapter navigation, footnotes, bookmarks, dictionary lookups ([StarDict](docs/dictionary.md)), go-to-percent, auto page turn, orientation control, focus reading, KOReader progress sync and more.
 
 - **Various formats**: native handling for `.epub`, `.xtc/.xtch`, `.txt`, and `.bmp`.
 
@@ -25,7 +25,7 @@ CrossPoint is open-source e-reader firmware - community-built, fully hackable, f
 - **Library workflow**: folder browser, hidden-file toggle, long-press delete, recent books, SD-cache management.
 
 - **Wireless workflows**:
-  
+
   - File transfer web UI
   - EPUB Optimizer
   - Web settings UI/API (edit many device settings from browser)
@@ -61,9 +61,9 @@ https://crosspointreader.com/#unlock-tool before you can flash CrossPoint.
 USB port or browser before assuming the device is locked. Only reach for the unlocker if the device still doesn't appear.
 
 > ### ⚠️ WARNING: READ THIS BEFORE USING THE UNLOCKER ⚠️
-> 
+>
 > **The only officially supported firmwares in the unlock tool are CrossPoint and CrossInk.**
-> 
+>
 > Flashing any other firmware on a USB-locked device may **permanently brick the device** or leave it **permanently
 > stuck on that firmware with no recovery path**. Once USB flashing is re-locked, your only way back is via OTA, and if
 > the firmware you flashed doesn't support OTA, **there is no way out**.
@@ -145,19 +145,55 @@ Conversion runs the firmware repo's `lib/EpdFont/scripts/fontconvert_sdcard.py` 
 ### Prerequisites
 
 - [pioarduino](https://github.com/pioarduino/pioarduino) or VS Code + pioarduino plugin
-- Python 3.8+
-- `clang-format` 21
-- USB-C cable supporting data transfer
+- Python 3.8+ for the historical firmware/helper-script baseline
+- Python 3.14 for the CI-parity quality environment
+- Go 1.25.5
+- `cmake` + `ctest`
+- `ninja` (`ninja-build` on Debian/Ubuntu)
+- `clang-format` 21+
+- `shellcheck-py==0.11.0.1` via `requirements-quality.txt`
+- `actionlint v1.7.12`
+- `gitleaks v8.30.1`
+- USB-C cable for device testing and flashing
 
 ### Setup
 
 ```bash
 git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader
 cd crosspoint-reader
+python -m pip install --upgrade pip
+python -m pip install --requirement requirements-quality.txt
+python -m pip install --upgrade https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
 
 # if cloned without --recursive:
 git submodule update --init --recursive
 ```
+
+`requirements-quality.txt` installs the pinned `shellcheck-py==0.11.0.1` executable used by CI.
+Use Python 3.14 for this CI-parity quality environment even if your firmware/helper-script work stays on the historical Python 3.8+ baseline.
+
+Install the non-Python CI tools before `python scripts/quality_check.py complete`:
+
+```bash
+# Debian/Ubuntu example
+sudo apt-get update
+sudo apt-get install -y cmake ninja-build
+
+# ctest ships with cmake packages on common platforms.
+# Install actionlint v1.7.12 and gitleaks v8.30.1 from their release archives,
+# then place the binaries in your PATH.
+```
+
+Use the same commands from Git Bash on Windows after installing CMake/CTest, Ninja, actionlint v1.7.12, and gitleaks v8.30.1 with your preferred package manager.
+
+If you previously configured `core.hooksPath`, migrate to prek hooks:
+
+```bash
+git config --unset core.hooksPath
+prek install --hook-type pre-commit --hook-type pre-push
+```
+
+`git config --unset core.hooksPath` may return nonzero when the setting was never present.
 
 ### Nix/NixOS
 
@@ -183,13 +219,14 @@ After rebuilding the system configuration, reconnect the device or reload udev r
 pio run --target upload
 ```
 
-### Contributor pre-PR checks
+### Contributor quality checks
 
 ```bash
-./bin/clang-format-fix
-pio check -e default
-pio run -e default
+prek run --all-files
+python scripts/quality_check.py complete
 ```
+
+Local hooks can be bypassed. Protected `develop` uses the CI check named `Test Status` as the required enforcement layer.
 
 ### Debugging
 
@@ -272,7 +309,7 @@ One of the best things about open source is that anyone can take the code in a d
 
 - ~~[PlusPoint](https://github.com/ngxson/pluspoint-reader) — custom JS apps support.~~ (Unmaintained)
 
-- [crosspoint-reader-papers3](https://github.com/juicecultus/crosspoint-reader-papers3) — Crosspoint port for M5Stack Paper S3. 
+- [crosspoint-reader-papers3](https://github.com/juicecultus/crosspoint-reader-papers3) — Crosspoint port for M5Stack Paper S3.
 
 - [t5s3-reader](https://github.com/ShallowGreen123/t5s3-reader) — Crosspoint port for LilyGo T5 ePaper S3 / T5S3 4.7-inch e-paper device.
 

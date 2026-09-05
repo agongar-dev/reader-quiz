@@ -1,87 +1,85 @@
 # Getting Started
 
-This guide helps you build and run CrossPoint locally.
+This is the shortest supported setup for local development and the Python 3.14 CI-parity quality environment.
 
 ## Prerequisites
 
-- PlatformIO Core (`pio`) or VS Code + PlatformIO IDE
-- Python 3.8+
-- `clang-format` 21+ in your `PATH` (CI uses clang-format 21)
-- USB-C cable
-- Xteink X4 device for hardware testing
+- Python 3.8+ for the historical firmware/helper-script baseline
+- Python 3.14 for the CI-parity quality environment
+- Go 1.25.5
+- PlatformIO Core from the pioarduino `v6.1.19` archive
+- `cmake` + `ctest`
+- `ninja` (`ninja-build` on Debian/Ubuntu)
+- `clang-format` 21+
+- `shellcheck-py==0.11.0.1` via `requirements-quality.txt`
+- `actionlint v1.7.12`
+- `gitleaks v8.30.1`
+- USB-C cable for device testing
 
-If `./bin/clang-format-fix` fails with either of these errors, install clang-format 21:
-
-- `clang-format: No such file or directory`
-- `.clang-format: error: unknown key 'AlignFunctionDeclarations'`
-
-Examples:
-
-```sh
-# Debian/Ubuntu (try this first)
-sudo apt-get update && sudo apt-get install -y clang-format-21
-
-# If the package is unavailable, add LLVM apt repo and retry
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-sudo ./llvm.sh 21
-sudo apt-get update
-sudo apt-get install -y clang-format-21
-
-# macOS (Homebrew)
-brew install clang-format
-```
-
-Then verify:
-
-```sh
-clang-format-21 --version
-```
-
-The reported major version must be 21 or newer.
-
-## Clone and initialize
+## Bootstrap
 
 ```sh
 git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader
 cd crosspoint-reader
+python -m pip install --upgrade pip
+python -m pip install --requirement requirements-quality.txt
+python -m pip install --upgrade https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
 ```
 
-If you already cloned without submodules:
+`requirements-quality.txt` installs the pinned `shellcheck-py==0.11.0.1` executable used by CI.
+Use Python 3.14 for this CI-parity quality environment even if your firmware/helper-script work stays on the historical Python 3.8+ baseline.
+
+Install the non-Python quality tools before `python scripts/quality_check.py complete`.
+
+### Linux example
+
+```sh
+sudo apt-get update
+sudo apt-get install -y cmake ninja-build
+# ctest ships with cmake packages on common Linux distros.
+```
+
+### actionlint and gitleaks
+
+Install `actionlint v1.7.12` and `gitleaks v8.30.1` from their release archives, then add the binaries to your `PATH`.
+
+### Windows
+
+Use Git Bash on Windows for the repository commands in this guide after installing CMake/CTest, Ninja, `actionlint v1.7.12`, and `gitleaks v8.30.1` with your preferred package manager.
+
+If you cloned without submodules:
 
 ```sh
 git submodule update --init --recursive
 ```
 
-Enable the repository-managed Git hooks (required once per clone):
+## Hook migration
+
+If you previously pointed Git at `.githooks`, remove that first:
 
 ```sh
-git config core.hooksPath .githooks
-chmod +x .githooks/pre-commit
+git config --unset core.hooksPath
 ```
 
-## Build
+That command may return nonzero when `core.hooksPath` was never set.
+
+Then install the shared prek hooks:
 
 ```sh
-pio run
+prek install --hook-type pre-commit --hook-type pre-push
 ```
 
-## Flash
+## Daily commands
 
 ```sh
-pio run --target upload
+prek run --all-files
+python scripts/quality_check.py complete
 ```
 
-## First checks before opening a PR
-
-```sh
-./bin/clang-format-fix
-pio check --fail-on-defect low --fail-on-defect medium --fail-on-defect high
-pio run
-```
+Use Git Bash on Windows for the same commands.
 
 ## What to read next
 
-- [Architecture Overview](./architecture.md)
 - [Development Workflow](./development-workflow.md)
 - [Testing and Debugging](./testing-debugging.md)
+- [Architecture Overview](./architecture.md)

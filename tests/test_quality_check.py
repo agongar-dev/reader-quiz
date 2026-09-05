@@ -137,6 +137,17 @@ class QualityCheckRunnerTests(unittest.TestCase):
             quality_check_plan_profiles(commands), list(plan.BROAD_SHARED_CHECKS)
         )
 
+    def test_firmware_build_gives_each_environment_its_own_timeout(self):
+        commands = quality_check.build_operation_commands("firmware-build", REPO_ROOT)
+
+        self.assertEqual(
+            commands,
+            [
+                ["pio", "run", "-e", "default"],
+                ["pio", "run", "-e", "sticky"],
+            ],
+        )
+
     def test_python_tests_omit_optional_ope_modules_when_missing(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = pathlib.Path(temp_dir)

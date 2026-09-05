@@ -232,7 +232,10 @@ def _build_external_commands(
             ]
         ]
     if operation == "firmware-build":
-        return [["pio", "run", "-e", "default", "-e", "sticky"]]
+        return [
+            ["pio", "run", "-e", "default"],
+            ["pio", "run", "-e", "sticky"],
+        ]
     if operation == "validate":
         return [
             [
