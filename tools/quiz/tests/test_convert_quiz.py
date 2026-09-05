@@ -18,7 +18,12 @@ CANONICAL_SOURCE = {
     "deck": {"id": "mini-quiz", "title": "Mini Quiz"},
     "questions": [
         {"prompt": "First?", "choices": ["A", "B"], "correct": 1},
-        {"prompt": "Pi?", "choices": ["2", "3.14", "4"], "correct": 1, "explanation": "Approx."},
+        {
+            "prompt": "Pi?",
+            "choices": ["2", "3.14", "4"],
+            "correct": 1,
+            "explanation": "Approx.",
+        },
     ],
 }
 
@@ -46,7 +51,9 @@ def length_prefixed(text: str) -> bytes:
 
 def expected_revision_identity() -> bytes:
     digest = hashlib.sha256()
-    deck_identity = hashlib.sha256(b"quiz-deck-id-v1\0" + CANONICAL_SOURCE["deck"]["id"].encode("utf-8")).digest()[:16]
+    deck_identity = hashlib.sha256(
+        b"quiz-deck-id-v1\0" + CANONICAL_SOURCE["deck"]["id"].encode("utf-8")
+    ).digest()[:16]
     digest.update(b"quiz-revision-v1\0")
     digest.update(deck_identity)
     digest.update(len(CANONICAL_SOURCE["questions"]).to_bytes(4, "little"))
@@ -61,7 +68,9 @@ def expected_revision_identity() -> bytes:
 
 
 def write_source(path: Path, payload: dict[str, Any]) -> None:
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def parse_quiz_artifact(data: bytes) -> dict[str, object]:
@@ -93,7 +102,9 @@ def parse_quiz_artifact(data: bytes) -> dict[str, object]:
     for ordinal in range(question_count):
         entry_offset = index_offset + ordinal * 8
         record_offset = int.from_bytes(data[entry_offset : entry_offset + 4], "little")
-        record_bytes = int.from_bytes(data[entry_offset + 4 : entry_offset + 8], "little")
+        record_bytes = int.from_bytes(
+            data[entry_offset + 4 : entry_offset + 8], "little"
+        )
         assert record_offset == expected_offset
         record = data[record_offset : record_offset + record_bytes]
         assert int.from_bytes(record[0:2], "little") == 24
@@ -101,10 +112,14 @@ def parse_quiz_artifact(data: bytes) -> dict[str, object]:
         correct = record[3]
         prompt_length = int.from_bytes(record[4:6], "little")
         explanation_length = int.from_bytes(record[6:8], "little")
-        choice_lengths = [int.from_bytes(record[8 + i * 2 : 10 + i * 2], "little") for i in range(6)]
+        choice_lengths = [
+            int.from_bytes(record[8 + i * 2 : 10 + i * 2], "little") for i in range(6)
+        ]
         payload_length = int.from_bytes(record[20:24], "little")
         active_choice_lengths = choice_lengths[:choice_count]
-        assert payload_length == prompt_length + explanation_length + sum(active_choice_lengths)
+        assert payload_length == prompt_length + explanation_length + sum(
+            active_choice_lengths
+        )
         assert record_bytes == 24 + payload_length
         cursor = 24
         prompt = record[cursor : cursor + prompt_length].decode("utf-8")
@@ -136,7 +151,9 @@ def parse_quiz_artifact(data: bytes) -> dict[str, object]:
 
 
 class ConvertQuizTest(unittest.TestCase):
-    def test_canonical_source_is_deterministic_and_matches_the_quiz_v1_contract(self) -> None:
+    def test_canonical_source_is_deterministic_and_matches_the_quiz_v1_contract(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             out_one = Path(tmp_dir) / "one.quiz"
             out_two = Path(tmp_dir) / "two.quiz"
@@ -160,16 +177,30 @@ class ConvertQuizTest(unittest.TestCase):
                 artifact["deck_identity"],
                 hashlib.sha256(b"quiz-deck-id-v1\0mini-quiz").digest()[:16],
             )
-            self.assertEqual(artifact["revision_identity"], expected_revision_identity())
+            self.assertEqual(
+                artifact["revision_identity"], expected_revision_identity()
+            )
             self.assertEqual(
                 artifact["questions"],
                 [
-                    {"prompt": "First?", "choices": ["A", "B"], "correct": 1, "explanation": ""},
-                    {"prompt": "Pi?", "choices": ["2", "3.14", "4"], "correct": 1, "explanation": "Approx."},
+                    {
+                        "prompt": "First?",
+                        "choices": ["A", "B"],
+                        "correct": 1,
+                        "explanation": "",
+                    },
+                    {
+                        "prompt": "Pi?",
+                        "choices": ["2", "3.14", "4"],
+                        "correct": 1,
+                        "explanation": "Approx.",
+                    },
                 ],
             )
 
-    def test_invalid_fields_and_bool_correct_produce_stable_located_diagnostics(self) -> None:
+    def test_invalid_fields_and_bool_correct_produce_stable_located_diagnostics(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             out_path = Path(tmp_dir) / "bad.quiz"
             result = run_converter(FIXTURES / "invalid_diagnostics.json", out_path)
@@ -232,7 +263,9 @@ class ConvertQuizTest(unittest.TestCase):
                 ],
             )
 
-    def test_duplicate_keys_fail_without_clobbering_existing_output_or_leaking_temp_files(self) -> None:
+    def test_duplicate_keys_fail_without_clobbering_existing_output_or_leaking_temp_files(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             out_path = Path(tmp_dir) / "existing.quiz"
             out_path.write_bytes(b"keep-me")
@@ -285,7 +318,9 @@ class ConvertQuizTest(unittest.TestCase):
                 {
                     "format": "quiz-source-v1",
                     "deck": {"id": "a" * 65, "title": "Deck Id Too Long"},
-                    "questions": [{"prompt": "Q?", "choices": ["A", "B"], "correct": 0}],
+                    "questions": [
+                        {"prompt": "Q?", "choices": ["A", "B"], "correct": 0}
+                    ],
                 },
             )
 
@@ -354,7 +389,9 @@ class ConvertQuizTest(unittest.TestCase):
                 ],
             )
 
-    def test_preexisting_sibling_temp_file_fails_without_clobbering_output_or_temp(self) -> None:
+    def test_preexisting_sibling_temp_file_fails_without_clobbering_output_or_temp(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             source_path = Path(tmp_dir) / "canonical.json"
             write_source(source_path, {"format": "quiz-source-v1", **CANONICAL_SOURCE})
