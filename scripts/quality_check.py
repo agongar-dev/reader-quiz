@@ -169,6 +169,112 @@ def _chunked(items: Sequence[str], size: int) -> list[list[str]]:
     return [list(items[index : index + size]) for index in range(0, len(items), size)]
 
 
+def command_env_for_operation(operation: str) -> dict[str, str]:
+    del operation
+    return {}
+
+
+def _build_external_commands(
+    operation: str, repo_root: pathlib.Path
+) -> list[list[str]]:
+    python = _python_executable()
+    if operation == "format-changed":
+        return [
+            [python, "-m", "ruff", "format", *PYTHON_TARGETS],
+            [python, "-m", "ruff", "check", "--fix", *PYTHON_TARGETS],
+        ]
+    if operation == "format-check":
+        return [
+            [python, "-m", "ruff", "format", "--check", *PYTHON_TARGETS],
+            [python, "-m", "ruff", "check", *PYTHON_TARGETS],
+            [python, "scripts/quality_check.py", "clang-format-check"],
+        ]
+    if operation == "clang-format-check":
+        return [
+            [
+                python,
+                "scripts/quality_check.py",
+                "clang-format-check-files",
+                "clang-format-21|clang-format",
+                *chunk,
+            ]
+            for chunk in _chunked(_clang_format_paths(repo_root), 100)
+        ]
+    if operation == "host-tests":
+        return [
+            [
+                "cmake",
+                "-S",
+                "test",
+                "-B",
+                "build/test",
+                "-G",
+                "Ninja",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DFETCHCONTENT_BASE_DIR=.cache/cmake-fetch",
+            ],
+            ["cmake", "--build", "build/test"],
+            ["ctest", "--test-dir", "build/test", "--output-on-failure", "-j"],
+        ]
+    if operation == "python-tests":
+        return [[python, "-m", "unittest", *build_python_test_modules(repo_root)]]
+    if operation == "static-analysis":
+        return [
+            [
+                "pio",
+                "check",
+                "--fail-on-defect",
+                "low",
+                "--fail-on-defect",
+                "medium",
+                "--fail-on-defect",
+                "high",
+            ]
+        ]
+    if operation == "firmware-build":
+        return [["pio", "run", "-e", "default", "-e", "sticky"]]
+    if operation == "validate":
+        return [
+            [
+                python,
+                "-m",
+                "py_compile",
+                "scripts/quality_check.py",
+                "scripts/quality_check_plan.py",
+                "scripts/quality_check_git.py",
+            ],
+            [python, "-m", "prek", "validate-config", ".pre-commit-config.yaml"],
+            ["actionlint", *VALIDATE_YAML_FILES[:5]],
+            [
+                "shellcheck",
+                "bin/clang-format-fix",
+                "scripts/script_profile_mem.sh",
+                "scripts/update_hyphenation.sh",
+            ],
+            [python, "-m", "yamllint", "-c", ".yamllint.yaml", *VALIDATE_YAML_FILES],
+            ["gitleaks", "git", "--redact", "--no-banner", "."],
+            [
+                python,
+                "scripts/quality_check.py",
+                "repository-policy",
+                *_repository_policy_targets(repo_root),
+            ],
+        ]
+    return []
+
+
+def build_operation_commands(
+    operation: str, repo_root: pathlib.Path | str
+) -> list[list[str]]:
+    root_path = pathlib.Path(repo_root)
+    if operation == "complete":
+        commands: list[list[str]] = []
+        for nested in quality_check_plan.BROAD_SHARED_CHECKS:
+            commands.extend(_build_external_commands(nested, root_path))
+        return commands
+    return _build_external_commands(operation, root_path)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
@@ -184,5 +290,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
 
