@@ -1,0 +1,60 @@
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        stages: [pre-commit]
+      - id: end-of-file-fixer
+        stages: [pre-commit]
+      - id: check-merge-conflict
+        stages: [pre-commit]
+      - id: check-json
+        stages: [pre-commit]
+      - id: check-yaml
+        stages: [pre-commit]
+      - id: check-case-conflict
+        stages: [pre-commit]
+      - id: check-added-large-files
+        stages: [pre-commit]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.0
+    hooks:
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix]
+        stages: [pre-commit]
+      - id: ruff-format
+        stages: [pre-commit]
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v21.1.8
+    hooks:
+      - id: clang-format
+        files: \.(c|cc|cpp|cxx|h|hh|hpp|hxx)$
+        exclude: (^lib/EpdFont/builtinFonts/)|(^lib/Epub/Epub/hyphenation/generated/)|(^lib/uzlib/)|(^lib/miniz/third_party/)|(\.generated\.h$)|(^lib/I18n/I18nKeys\.h$)|(^lib/I18n/I18nStrings\.h$)|(^lib/I18n/I18nStrings\.cpp$)
+        stages: [pre-commit]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: repository-policy
+        name: repository policy
+        entry: python scripts/quality_check.py repository-policy
+        language: system
+        pass_filenames: true
+        stages: [pre-commit]
+      - id: managed-pre-push
+        name: managed pre-push
+        entry: python scripts/quality_check.py managed-pre-push
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [pre-push]

@@ -216,6 +216,7 @@ def parse_memory_line(line: str) -> tuple[int | None, int | None, int | None]:
     Format: Free: N bytes, Total: N bytes, Min Free: N bytes, MaxAlloc: N bytes
     Returns: (free_bytes, total_bytes, max_alloc_bytes)
     """
+
     def _find(pattern: str) -> int | None:
         m = re.search(pattern, line)
         if m:
@@ -303,12 +304,14 @@ def serial_worker(ser, kwargs: dict[str, str]) -> None:
                         continue  # ignore
 
                     # Add PC timestamp
-                    pc_time = datetime.now().strftime("%H:%M:%S")
+                    pc_time = datetime.now().strftime("%H:%M:%S")  # noqa: DTZ005
                     formatted_line = re.sub(r"^\[\d+\]", f"[{pc_time}]", clean_line)
 
                     # Check for Memory Line
                     if "[MEM]" in formatted_line:
-                        free_val, total_val, max_alloc_val = parse_memory_line(formatted_line)
+                        free_val, total_val, max_alloc_val = parse_memory_line(
+                            formatted_line
+                        )
                         if free_val is not None and total_val is not None:
                             with data_lock:
                                 time_data.append(pc_time)

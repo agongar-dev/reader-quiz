@@ -6,9 +6,10 @@ import hashlib
 import json
 import os
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, TextIO
+from typing import Any, TextIO
 
 QUIZ_SOURCE_FORMAT = "quiz-source-v1"
 QUIZ_MAGIC = bytes((0x47, 0x51, 0x55, 0x49, 0x5A, 0x0D, 0x0A, 0x1A))
@@ -109,15 +110,25 @@ def append_text_diagnostics(
     field_name: str,
 ) -> str | None:
     if not isinstance(value, str):
-        diagnostics.append(error("invalid-type", path, f"expected string, got {type(value).__name__}"))
+        diagnostics.append(
+            error("invalid-type", path, f"expected string, got {type(value).__name__}")
+        )
         return None
     if "\x00" in value:
-        diagnostics.append(error("embedded-nul", path, f"{field_name} must not contain NUL bytes"))
+        diagnostics.append(
+            error("embedded-nul", path, f"{field_name} must not contain NUL bytes")
+        )
         return None
     raw = value.encode("utf-8")
     upper = max_bytes if max_bytes is not None else "∞"
     if len(raw) < min_bytes or (max_bytes is not None and len(raw) > max_bytes):
-        diagnostics.append(error("out-of-bounds", path, f"expected {min_bytes}..{upper} UTF-8 bytes, got {len(raw)}"))
+        diagnostics.append(
+            error(
+                "out-of-bounds",
+                path,
+                f"expected {min_bytes}..{upper} UTF-8 bytes, got {len(raw)}",
+            )
+        )
         return None
     return value
 
@@ -130,7 +141,9 @@ def validate_source_document(raw: bytes) -> tuple[DeckSource | None, list[Diagno
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
-        return None, [error("invalid-utf8", "$", f"input is not valid UTF-8: {exc.reason}")]
+        return None, [
+            error("invalid-utf8", "$", f"input is not valid UTF-8: {exc.reason}")
+        ]
 
     try:
         document = json.loads(text, object_pairs_hook=JSONObject)
@@ -139,7 +152,11 @@ def validate_source_document(raw: bytes) -> tuple[DeckSource | None, list[Diagno
 
     collect_duplicate_key_diagnostics(document, "$", diagnostics)
     if not isinstance(document, JSONObject):
-        diagnostics.append(error("invalid-type", "$", f"expected object, got {type(document).__name__}"))
+        diagnostics.append(
+            error(
+                "invalid-type", "$", f"expected object, got {type(document).__name__}"
+            )
+        )
         return None, diagnostics
 
     deck_value: Any = None
@@ -149,29 +166,53 @@ def validate_source_document(raw: bytes) -> tuple[DeckSource | None, list[Diagno
         if key == "format":
             format_value = value
             if not isinstance(value, str):
-                diagnostics.append(error("invalid-type", "$.format", f"expected string, got {type(value).__name__}"))
+                diagnostics.append(
+                    error(
+                        "invalid-type",
+                        "$.format",
+                        f"expected string, got {type(value).__name__}",
+                    )
+                )
             elif value != QUIZ_SOURCE_FORMAT:
-                diagnostics.append(error("unsupported-format", "$.format", f"expected '{QUIZ_SOURCE_FORMAT}', got {value!r}"))
+                diagnostics.append(
+                    error(
+                        "unsupported-format",
+                        "$.format",
+                        f"expected '{QUIZ_SOURCE_FORMAT}', got {value!r}",
+                    )
+                )
         elif key == "deck":
             deck_value = value
         elif key == "questions":
             questions_value = value
         else:
-            diagnostics.append(error("unknown-field", f"$.{key}", f"unknown field {key!r}"))
+            diagnostics.append(
+                error("unknown-field", f"$.{key}", f"unknown field {key!r}")
+            )
 
     if format_value is None:
-        diagnostics.append(error("missing-field", "$.format", "missing required field 'format'"))
+        diagnostics.append(
+            error("missing-field", "$.format", "missing required field 'format'")
+        )
     if deck_value is None:
-        diagnostics.append(error("missing-field", "$.deck", "missing required field 'deck'"))
+        diagnostics.append(
+            error("missing-field", "$.deck", "missing required field 'deck'")
+        )
     if questions_value is None:
-        diagnostics.append(error("missing-field", "$.questions", "missing required field 'questions'"))
+        diagnostics.append(
+            error("missing-field", "$.questions", "missing required field 'questions'")
+        )
 
     deck_id: str | None = None
     title: str | None = None
     if deck_value is not None:
         deck_id, title = validate_deck(deck_value, diagnostics)
 
-    questions = validate_questions(questions_value, diagnostics) if questions_value is not None else None
+    questions = (
+        validate_questions(questions_value, diagnostics)
+        if questions_value is not None
+        else None
+    )
     if diagnostics:
         return None, diagnostics
 
@@ -179,10 +220,14 @@ def validate_source_document(raw: bytes) -> tuple[DeckSource | None, list[Diagno
     return DeckSource(deck_id, title, tuple(questions)), diagnostics
 
 
-def collect_duplicate_key_diagnostics(value: Any, path: str, diagnostics: list[Diagnostic]) -> None:
+def collect_duplicate_key_diagnostics(
+    value: Any, path: str, diagnostics: list[Diagnostic]
+) -> None:
     if isinstance(value, JSONObject):
         for duplicate_key in value.duplicate_keys:
-            diagnostics.append(error("duplicate-key", path, f"duplicate key {duplicate_key!r}"))
+            diagnostics.append(
+                error("duplicate-key", path, f"duplicate key {duplicate_key!r}")
+            )
         for key, child in value.items():
             collect_duplicate_key_diagnostics(child, f"{path}.{key}", diagnostics)
     elif isinstance(value, list):
@@ -190,10 +235,14 @@ def collect_duplicate_key_diagnostics(value: Any, path: str, diagnostics: list[D
             collect_duplicate_key_diagnostics(child, f"{path}[{index}]", diagnostics)
 
 
-def validate_deck(value: Any, diagnostics: list[Diagnostic]) -> tuple[str | None, str | None]:
+def validate_deck(
+    value: Any, diagnostics: list[Diagnostic]
+) -> tuple[str | None, str | None]:
     path = "$.deck"
     if not isinstance(value, JSONObject):
-        diagnostics.append(error("invalid-type", path, f"expected object, got {type(value).__name__}"))
+        diagnostics.append(
+            error("invalid-type", path, f"expected object, got {type(value).__name__}")
+        )
         return None, None
 
     deck_id: str | None = None
@@ -219,22 +268,38 @@ def validate_deck(value: Any, diagnostics: list[Diagnostic]) -> tuple[str | None
                 field_name="title",
             )
         else:
-            diagnostics.append(error("unknown-field", child_path, f"unknown field {key!r}"))
+            diagnostics.append(
+                error("unknown-field", child_path, f"unknown field {key!r}")
+            )
 
     if "id" not in value:
-        diagnostics.append(error("missing-field", f"{path}.id", "missing required field 'id'"))
+        diagnostics.append(
+            error("missing-field", f"{path}.id", "missing required field 'id'")
+        )
     if "title" not in value:
-        diagnostics.append(error("missing-field", f"{path}.title", "missing required field 'title'"))
+        diagnostics.append(
+            error("missing-field", f"{path}.title", "missing required field 'title'")
+        )
     return deck_id, title
 
 
-def validate_questions(value: Any, diagnostics: list[Diagnostic]) -> list[QuestionSource] | None:
+def validate_questions(
+    value: Any, diagnostics: list[Diagnostic]
+) -> list[QuestionSource] | None:
     path = "$.questions"
     if not isinstance(value, list):
-        diagnostics.append(error("invalid-type", path, f"expected array, got {type(value).__name__}"))
+        diagnostics.append(
+            error("invalid-type", path, f"expected array, got {type(value).__name__}")
+        )
         return None
     if len(value) < 1 or len(value) > QUIZ_MAX_QUESTIONS:
-        diagnostics.append(error("out-of-bounds", path, f"expected 1..{QUIZ_MAX_QUESTIONS} items, got {len(value)}"))
+        diagnostics.append(
+            error(
+                "out-of-bounds",
+                path,
+                f"expected 1..{QUIZ_MAX_QUESTIONS} items, got {len(value)}",
+            )
+        )
 
     questions: list[QuestionSource] = []
     for index, item in enumerate(value):
@@ -244,10 +309,14 @@ def validate_questions(value: Any, diagnostics: list[Diagnostic]) -> list[Questi
     return questions
 
 
-def validate_question(value: Any, index: int, diagnostics: list[Diagnostic]) -> QuestionSource | None:
+def validate_question(
+    value: Any, index: int, diagnostics: list[Diagnostic]
+) -> QuestionSource | None:
     path = f"$.questions[{index}]"
     if not isinstance(value, JSONObject):
-        diagnostics.append(error("invalid-type", path, f"expected object, got {type(value).__name__}"))
+        diagnostics.append(
+            error("invalid-type", path, f"expected object, got {type(value).__name__}")
+        )
         return None
 
     start_errors = len(diagnostics)
@@ -268,12 +337,22 @@ def validate_question(value: Any, index: int, diagnostics: list[Diagnostic]) -> 
                 field_name="prompt",
             )
         elif key == "choices":
-            choices = validate_choices(value=child, path=child_path, diagnostics=diagnostics)
+            choices = validate_choices(
+                value=child, path=child_path, diagnostics=diagnostics
+            )
         elif key == "correct":
             if isinstance(child, bool):
-                diagnostics.append(error("invalid-type", child_path, "expected integer, got bool"))
+                diagnostics.append(
+                    error("invalid-type", child_path, "expected integer, got bool")
+                )
             elif not isinstance(child, int):
-                diagnostics.append(error("invalid-type", child_path, f"expected integer, got {type(child).__name__}"))
+                diagnostics.append(
+                    error(
+                        "invalid-type",
+                        child_path,
+                        f"expected integer, got {type(child).__name__}",
+                    )
+                )
             else:
                 correct = child
         elif key == "explanation":
@@ -288,27 +367,59 @@ def validate_question(value: Any, index: int, diagnostics: list[Diagnostic]) -> 
             if text is not None:
                 explanation = text
         else:
-            diagnostics.append(error("unknown-field", child_path, f"unknown field {key!r}"))
+            diagnostics.append(
+                error("unknown-field", child_path, f"unknown field {key!r}")
+            )
 
     for required in ("prompt", "choices", "correct"):
         if required not in value:
-            diagnostics.append(error("missing-field", f"{path}.{required}", f"missing required field '{required}'"))
+            diagnostics.append(
+                error(
+                    "missing-field",
+                    f"{path}.{required}",
+                    f"missing required field '{required}'",
+                )
+            )
 
-    if isinstance(correct, int) and isinstance(choices, tuple):
-        if correct < 0 or correct >= len(choices):
-            diagnostics.append(error("out-of-bounds", f"{path}.correct", f"expected 0..{len(choices) - 1}, got {correct}"))
+    if (
+        isinstance(correct, int)
+        and isinstance(choices, tuple)
+        and (correct < 0 or correct >= len(choices))
+    ):
+        diagnostics.append(
+            error(
+                "out-of-bounds",
+                f"{path}.correct",
+                f"expected 0..{len(choices) - 1}, got {correct}",
+            )
+        )
 
-    if prompt is None or choices is None or correct is None or len(diagnostics) != start_errors:
+    if (
+        prompt is None
+        or choices is None
+        or correct is None
+        or len(diagnostics) != start_errors
+    ):
         return None
     return QuestionSource(prompt, choices, correct, explanation)
 
 
-def validate_choices(*, path: str, value: Any, diagnostics: list[Diagnostic]) -> tuple[str, ...] | None:
+def validate_choices(
+    *, path: str, value: Any, diagnostics: list[Diagnostic]
+) -> tuple[str, ...] | None:
     if not isinstance(value, list):
-        diagnostics.append(error("invalid-type", path, f"expected array, got {type(value).__name__}"))
+        diagnostics.append(
+            error("invalid-type", path, f"expected array, got {type(value).__name__}")
+        )
         return None
     if len(value) < QUIZ_MIN_CHOICES or len(value) > QUIZ_MAX_CHOICES:
-        diagnostics.append(error("out-of-bounds", path, f"expected {QUIZ_MIN_CHOICES}..{QUIZ_MAX_CHOICES} items, got {len(value)}"))
+        diagnostics.append(
+            error(
+                "out-of-bounds",
+                path,
+                f"expected {QUIZ_MIN_CHOICES}..{QUIZ_MAX_CHOICES} items, got {len(value)}",
+            )
+        )
 
     choices: list[str] = []
     for index, item in enumerate(value):
@@ -336,7 +447,9 @@ def build_quiz_artifact(source: DeckSource) -> tuple[bytes | None, list[Diagnost
         prompt = question.prompt.encode("utf-8")
         explanation = question.explanation.encode("utf-8")
         choice_bytes = [choice.encode("utf-8") for choice in question.choices]
-        payload_length = len(prompt) + len(explanation) + sum(len(choice) for choice in choice_bytes)
+        payload_length = (
+            len(prompt) + len(explanation) + sum(len(choice) for choice in choice_bytes)
+        )
         descriptor = bytearray(QUIZ_RECORD_HEADER_BYTES)
         descriptor[0:2] = QUIZ_RECORD_HEADER_BYTES.to_bytes(2, "little")
         descriptor[2] = len(choice_bytes)
@@ -353,7 +466,13 @@ def build_quiz_artifact(source: DeckSource) -> tuple[bytes | None, list[Diagnost
 
     file_size = next_record_offset
     if file_size > QUIZ_MAX_FILE_BYTES:
-        return None, [error("out-of-bounds", "$", f"artifact size {file_size} exceeds {QUIZ_MAX_FILE_BYTES} bytes")]
+        return None, [
+            error(
+                "out-of-bounds",
+                "$",
+                f"artifact size {file_size} exceeds {QUIZ_MAX_FILE_BYTES} bytes",
+            )
+        ]
 
     deck_identity = compute_deck_identity(source.deck_id)
     revision_identity = compute_revision_identity(deck_identity, source.questions)
@@ -385,10 +504,14 @@ def build_quiz_artifact(source: DeckSource) -> tuple[bytes | None, list[Diagnost
 
 
 def compute_deck_identity(deck_id: str) -> bytes:
-    return hashlib.sha256(b"quiz-deck-id-v1\0" + deck_id.encode("utf-8")).digest()[:QUIZ_IDENTITY_BYTES]
+    return hashlib.sha256(b"quiz-deck-id-v1\0" + deck_id.encode("utf-8")).digest()[
+        :QUIZ_IDENTITY_BYTES
+    ]
 
 
-def compute_revision_identity(deck_identity: bytes, questions: Iterable[QuestionSource]) -> bytes:
+def compute_revision_identity(
+    deck_identity: bytes, questions: Iterable[QuestionSource]
+) -> bytes:
     question_list = list(questions)
     digest = hashlib.sha256()
     digest.update(b"quiz-revision-v1\0")
@@ -438,14 +561,21 @@ def validate_quiz_artifact_bytes(data: bytes) -> None:
         raise ArtifactValidationError("invalid index entry size")
     if title_length < 1 or title_length > QUIZ_MAX_TITLE_BYTES:
         raise ArtifactValidationError("title length out of bounds")
-    if data[40:56] == bytes(QUIZ_IDENTITY_BYTES) or data[56:72] == bytes(QUIZ_IDENTITY_BYTES):
+    if data[40:56] == bytes(QUIZ_IDENTITY_BYTES) or data[56:72] == bytes(
+        QUIZ_IDENTITY_BYTES
+    ):
         raise ArtifactValidationError("zero identity")
-    if data[72 + title_length : 168] != bytes(QUIZ_MAX_TITLE_BYTES - title_length) or data[168:176] != bytes(8):
+    if data[72 + title_length : 168] != bytes(
+        QUIZ_MAX_TITLE_BYTES - title_length
+    ) or data[168:176] != bytes(8):
         raise ArtifactValidationError("non-zero padding")
     decode_artifact_text(data[72 : 72 + title_length])
 
     expected_index_bytes = question_count * QUIZ_INDEX_ENTRY_BYTES
-    if index_bytes != expected_index_bytes or records_offset != QUIZ_HEADER_BYTES + expected_index_bytes:
+    if (
+        index_bytes != expected_index_bytes
+        or records_offset != QUIZ_HEADER_BYTES + expected_index_bytes
+    ):
         raise ArtifactValidationError("inconsistent offsets")
 
     records_limit = len(data)
@@ -454,7 +584,10 @@ def validate_quiz_artifact_bytes(data: bytes) -> None:
         entry_offset = index_offset + ordinal * QUIZ_INDEX_ENTRY_BYTES
         record_offset = le32(data, entry_offset)
         record_bytes = le32(data, entry_offset + 4)
-        if record_offset != next_record_offset or record_offset + record_bytes > records_limit:
+        if (
+            record_offset != next_record_offset
+            or record_offset + record_bytes > records_limit
+        ):
             raise ArtifactValidationError("invalid index entry")
         validate_quiz_record(data[record_offset : record_offset + record_bytes])
         next_record_offset = record_offset + record_bytes
@@ -494,7 +627,10 @@ def validate_quiz_record(record: bytes) -> None:
         elif choice_length != 0:
             raise ArtifactValidationError("inactive choice length must be zero")
 
-    if payload_length != expected_payload or len(record) != QUIZ_RECORD_HEADER_BYTES + payload_length:
+    if (
+        payload_length != expected_payload
+        or len(record) != QUIZ_RECORD_HEADER_BYTES + payload_length
+    ):
         raise ArtifactValidationError("payload length mismatch")
 
     cursor = QUIZ_RECORD_HEADER_BYTES
@@ -536,7 +672,9 @@ def write_artifact(output_path: Path, artifact: bytes) -> list[Diagnostic]:
                 os.fsync(handle.fileno())
             read_back = temp_path.read_bytes()
             if read_back != artifact:
-                raise ArtifactValidationError("read-back bytes differ from the generated artifact")
+                raise ArtifactValidationError(
+                    "read-back bytes differ from the generated artifact"
+                )
             validate_quiz_artifact_bytes(read_back)
             os.replace(temp_path, output_path)
             return []
@@ -549,7 +687,13 @@ def write_artifact(output_path: Path, artifact: bytes) -> list[Diagnostic]:
     except OSError as exc:
         if created_temp and temp_path.exists():
             temp_path.unlink()
-        return [error("write-failed", "$", f"failed to write output: {exc.strerror or str(exc)}")]
+        return [
+            error(
+                "write-failed",
+                "$",
+                f"failed to write output: {exc.strerror or str(exc)}",
+            )
+        ]
 
 
 def emit_diagnostics(stream: TextIO, diagnostics: Iterable[Diagnostic]) -> None:
@@ -562,7 +706,11 @@ def convert(source_path: Path, output_path: Path) -> list[Diagnostic]:
     try:
         raw = source_path.read_bytes()
     except OSError as exc:
-        return [error("read-failed", "$", f"failed to read source: {exc.strerror or str(exc)}")]
+        return [
+            error(
+                "read-failed", "$", f"failed to read source: {exc.strerror or str(exc)}"
+            )
+        ]
 
     source, diagnostics = validate_source_document(raw)
     if diagnostics:
@@ -577,7 +725,9 @@ def convert(source_path: Path, output_path: Path) -> list[Diagnostic]:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Convert canonical quiz-source-v1 JSON into a .quiz artifact.")
+    parser = argparse.ArgumentParser(
+        description="Convert canonical quiz-source-v1 JSON into a .quiz artifact."
+    )
     parser.add_argument("source", type=Path, help="input UTF-8 JSON file")
     parser.add_argument("output", type=Path, help="output .quiz path")
     return parser.parse_args(argv)
@@ -585,7 +735,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def exit_code_for_diagnostics(diagnostics: Iterable[Diagnostic]) -> int:
     publication_codes = {"read-failed", "write-failed", "artifact-validation-failed"}
-    return 3 if any(diagnostic.code in publication_codes for diagnostic in diagnostics) else 2
+    return (
+        3
+        if any(diagnostic.code in publication_codes for diagnostic in diagnostics)
+        else 2
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

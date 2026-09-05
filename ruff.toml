@@ -1,0 +1,4 @@
+target-version = "py38"
+
+[per-file-target-version]
+"tests/*.py" = "py314"

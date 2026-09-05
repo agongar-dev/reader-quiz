@@ -1,44 +1,36 @@
 # Development Workflow
 
-This page defines the expected local workflow before opening a pull request.
+Use the same quality commands locally that CI runs on `develop`.
+The firmware/helper-script baseline remains Python 3.8+, but the CI-parity quality environment in these steps is Python 3.14.
 
-## 1) Fork and create a focused branch
+## Quick path
 
-- Fork the repository to your own GitHub account
-- Clone your fork locally and add the upstream repository if needed
-- Enable repo hooks once per clone: `git config core.hooksPath .githooks && chmod +x .githooks/pre-commit`
+1. Clone the repo and install the shared quality tools from [Getting Started](./getting-started.md), including `cmake`/`ctest`, `ninja`, `shellcheck-py==0.11.0.1` from `requirements-quality.txt`, `actionlint v1.7.12`, and `gitleaks v8.30.1`.
+2. Migrate old hook configuration, then install prek hooks:
+   - `git config --unset core.hooksPath` (`git` may return nonzero if it was not set)
+   - `prek install --hook-type pre-commit --hook-type pre-push`
+3. Implement a focused change.
+4. Run `prek run --all-files` before opening a PR.
+5. Run `python scripts/quality_check.py complete` when you want the full local CI-equivalent pass.
 
-- Branch from `master`
-- Keep each PR focused on one fix or feature area
+## Local enforcement
 
-## 2) Implement with scope in mind
+- The `pre-commit` hook is the quick mutating pass.
+- The installed `pre-push` hook chooses the right shared checks for your changed paths.
+- Local hooks can be bypassed, so they are a convenience layer, not final enforcement.
+- protected develop requires the CI job named `Test Status`, which is the real merge gate.
 
-- Confirm your idea is in project scope: [SCOPE.md](../../SCOPE.md)
-- Prefer incremental changes over broad refactors
+## Commands
 
-## 3) Run local checks
+| Goal | Command |
+|---|---|
+| Install hooks | `prek install --hook-type pre-commit --hook-type pre-push` |
+| Quick pre-commit sweep | `prek run --all-files` |
+| Full local verification | `python scripts/quality_check.py complete` |
 
-```sh
-./bin/clang-format-fix
-pio check --fail-on-defect low --fail-on-defect medium --fail-on-defect high
-pio run
-```
+## PR expectations
 
-CI enforces formatting, static analysis, and build checks.
-Use clang-format 21+ locally to match CI.
-If `clang-format` is missing or too old locally, see [Getting Started](./getting-started.md).
-
-## 4) Open the PR
-
-- Use a semantic title (example: `fix: avoid crash when opening malformed epub`)
-- Fill out `.github/PULL_REQUEST_TEMPLATE.md`
-- Describe the problem, approach, and any tradeoffs
-- Include reproduction and verification steps for bug fixes
-
-## 5) Review etiquette
-
-- Be explicit and concise in responses
-- Keep discussions technical and respectful
-- Assume good intent and focus on code-level feedback
-
-For community expectations, see [GOVERNANCE.md](../../GOVERNANCE.md).
+- Branch from `develop`.
+- Keep each PR focused.
+- Describe reproduction and verification steps.
+- Follow [GOVERNANCE.md](../../GOVERNANCE.md) for review etiquette.

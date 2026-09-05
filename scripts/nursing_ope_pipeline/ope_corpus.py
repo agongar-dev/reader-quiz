@@ -18,9 +18,10 @@ import sys
 import tempfile
 import urllib.error
 import urllib.request
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_MANIFEST = SCRIPT_DIR / "manifest.json"
@@ -31,8 +32,14 @@ REVIEW_QUEUE_SCHEMA = "reader-quiz.exam-review-queue.v1"
 DEFAULT_NORMALIZED_DIRNAME = "normalized"
 EXCLUDED_ADJACENT_CORPUS = "adjacent_enfermeria_excluded_by_default"
 CORPUS_POLICIES = {
-    "baleares_official_primary": {"source_kind": "official_primary", "include_by_default": True},
-    "fuden_2022_2024_checklist": {"source_kind": "official_checklist", "include_by_default": True},
+    "baleares_official_primary": {
+        "source_kind": "official_primary",
+        "include_by_default": True,
+    },
+    "fuden_2022_2024_checklist": {
+        "source_kind": "official_checklist",
+        "include_by_default": True,
+    },
     "official_general_nursing_recency_candidate": {
         "source_kind": "official_recency_candidate",
         "include_by_default": True,
@@ -41,7 +48,10 @@ CORPUS_POLICIES = {
         "source_kind": "official_additional_source",
         "include_by_default": True,
     },
-    EXCLUDED_ADJACENT_CORPUS: {"source_kind": "adjacent_official", "include_by_default": False},
+    EXCLUDED_ADJACENT_CORPUS: {
+        "source_kind": "adjacent_official",
+        "include_by_default": False,
+    },
 }
 
 
@@ -56,7 +66,7 @@ class ManifestEntry:
     corpus: str
 
     @classmethod
-    def from_json(cls, raw: dict[str, Any]) -> "ManifestEntry":
+    def from_json(cls, raw: dict[str, Any]) -> ManifestEntry:
         return cls(
             id=raw["id"],
             jurisdiction=raw["jurisdiction"],
@@ -74,7 +84,10 @@ def load_manifest(path: Path) -> dict[str, Any]:
 
 
 def iter_entries(
-    manifest: dict[str, Any], *, include_candidates: bool = False, include_additional: bool = False
+    manifest: dict[str, Any],
+    *,
+    include_candidates: bool = False,
+    include_additional: bool = False,
 ) -> Iterable[ManifestEntry]:
     for raw in manifest.get("entries", []):
         yield ManifestEntry.from_json(raw)
@@ -91,7 +104,9 @@ def iter_entries(
 def build_entry_index(manifest: dict[str, Any]) -> dict[str, ManifestEntry]:
     return {
         entry.id: entry
-        for entry in iter_entries(manifest, include_candidates=True, include_additional=True)
+        for entry in iter_entries(
+            manifest, include_candidates=True, include_additional=True
+        )
     }
 
 
@@ -103,12 +118,12 @@ def corpus_policy(corpus: str) -> dict[str, Any]:
 
 
 def is_corpus_selected(entry: ManifestEntry, selected_corpora: set[str] | None) -> bool:
-    if selected_corpora and entry.corpus not in selected_corpora:
-        return False
-    return True
+    return not selected_corpora or entry.corpus in selected_corpora
 
 
-def load_parsed_exam_summaries(workdir: Path, manifest: dict[str, Any]) -> list[dict[str, Any]]:
+def load_parsed_exam_summaries(
+    workdir: Path, manifest: dict[str, Any]
+) -> list[dict[str, Any]]:
     json_dir = workdir / "json"
     paths = sorted(json_dir.glob("*.json"))
     summaries: list[dict[str, Any]] = []
@@ -151,7 +166,15 @@ def aggregate_by_corpus(summaries: list[dict[str, Any]]) -> list[dict[str, Any]]
             },
         )
         bucket["exams"] += 1
-        for key in ("questions", "choices_ok", "choices_four", "answers_or_anulada", "anulada", "answer_missing", "noted"):
+        for key in (
+            "questions",
+            "choices_ok",
+            "choices_four",
+            "answers_or_anulada",
+            "anulada",
+            "answer_missing",
+            "noted",
+        ):
             bucket[key] += int(summary.get(key, 0))
     return [grouped[key] for key in sorted(grouped)]
 
@@ -159,8 +182,14 @@ def aggregate_by_corpus(summaries: list[dict[str, Any]]) -> list[dict[str, Any]]
 def cmd_status(args: argparse.Namespace) -> int:
     manifest = load_manifest(args.manifest)
     entries = list(iter_entries(manifest))
-    candidates = [ManifestEntry.from_json(raw) for raw in manifest.get("candidate_2025_or_later", [])]
-    additional = [ManifestEntry.from_json(raw) for raw in manifest.get("additional_official_sources", [])]
+    candidates = [
+        ManifestEntry.from_json(raw)
+        for raw in manifest.get("candidate_2025_or_later", [])
+    ]
+    additional = [
+        ManifestEntry.from_json(raw)
+        for raw in manifest.get("additional_official_sources", [])
+    ]
     with_sources = [e for e in entries if e.official_urls]
     missing = [e for e in entries if not e.official_urls]
     candidates_with_sources = [e for e in candidates if e.official_urls]
@@ -175,24 +204,32 @@ def cmd_status(args: argparse.Namespace) -> int:
     print()
     for entry in entries:
         marker = "ready" if entry.official_urls else "missing-source"
-        print(f"{marker:14} {entry.id:48} {entry.corpus:40} {entry.jurisdiction} — {entry.label}")
+        print(
+            f"{marker:14} {entry.id:48} {entry.corpus:40} {entry.jurisdiction} — {entry.label}"
+        )
 
     if candidates:
         print("\n2025-or-later candidates for recency curation:")
         for entry in candidates:
             marker = "ready-candidate" if entry.official_urls else "candidate-missing"
-            print(f"{marker:17} {entry.id:45} {entry.corpus:40} {entry.jurisdiction} — {entry.label}")
+            print(
+                f"{marker:17} {entry.id:45} {entry.corpus:40} {entry.jurisdiction} — {entry.label}"
+            )
     if additional:
         print("\nAdditional official sources kept separate from the checklist:")
         for entry in additional:
             marker = "ready-extra" if entry.official_urls else "extra-missing"
-            print(f"{marker:17} {entry.id:45} {entry.corpus:40} {entry.jurisdiction} — {entry.label}")
+            print(
+                f"{marker:17} {entry.id:45} {entry.corpus:40} {entry.jurisdiction} — {entry.label}"
+            )
     return 0
 
 
 def download_url(url: str, out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
-    request = urllib.request.Request(url, headers={"User-Agent": "reader-quiz-corpus/0.1"})
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "reader-quiz-corpus/0.1"}
+    )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             data = response.read()
@@ -209,7 +246,9 @@ def cmd_download(args: argparse.Namespace) -> int:
     raw_dir = args.workdir / "raw"
     count = 0
     for entry in iter_entries(
-        manifest, include_candidates=args.include_candidates, include_additional=args.include_additional
+        manifest,
+        include_candidates=args.include_candidates,
+        include_additional=args.include_additional,
     ):
         if not entry.official_urls:
             continue
@@ -231,7 +270,7 @@ def cmd_download(args: argparse.Namespace) -> int:
 def extract_with_pypdf(pdf: Path) -> str | None:
     try:
         from pypdf import PdfReader  # type: ignore
-    except Exception:
+    except Exception:  # noqa: BLE001 - preserve broad optional pypdf fallback
         return None
 
     reader = PdfReader(str(pdf))
@@ -249,8 +288,7 @@ def extract_with_pdftotext(pdf: Path) -> str | None:
         ["pdftotext", "-layout", str(pdf), "-"],
         check=False,
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"pdftotext failed for {pdf}: {proc.stderr.strip()}")
@@ -267,11 +305,12 @@ def extract_with_ocr(pdf: Path) -> str | None:
             ["pdftoppm", "-r", "220", "-png", str(pdf), str(prefix)],
             check=False,
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
         if render.returncode != 0:
-            raise RuntimeError(f"pdftoppm OCR render failed for {pdf}: {render.stderr.strip()}")
+            raise RuntimeError(
+                f"pdftoppm OCR render failed for {pdf}: {render.stderr.strip()}"
+            )
 
         pages = sorted(Path(tmp).glob("page-*.png"))
         if not pages:
@@ -283,11 +322,12 @@ def extract_with_ocr(pdf: Path) -> str | None:
                 ["tesseract", str(page), "stdout", "-l", "spa+eng", "--psm", "6"],
                 check=False,
                 text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
             )
             if ocr.returncode != 0:
-                raise RuntimeError(f"tesseract OCR failed for {pdf} page {index}: {ocr.stderr.strip()}")
+                raise RuntimeError(
+                    f"tesseract OCR failed for {pdf} page {index}: {ocr.stderr.strip()}"
+                )
             parts.append(f"\n\n<!-- OCR Page {index} -->\n\n{ocr.stdout}")
         return "".join(parts).strip() + "\n"
 
@@ -361,7 +401,9 @@ def normalize_ws(text: str) -> str:
 def parse_answer_key(text: str) -> dict[int, int | None]:
     answers: dict[int, int | None] = {}
     for number, letter in ANSWER_TOKEN.findall(text):
-        answers[int(number)] = None if letter.upper() == "ANULADA" else ord(letter.upper()) - ord("A")
+        answers[int(number)] = (
+            None if letter.upper() == "ANULADA" else ord(letter.upper()) - ord("A")
+        )
     for number, letter in INLINE_ANSWER_TOKEN.findall(text):
         answers[int(number)] = ord(letter.upper()) - ord("A")
     return answers
@@ -388,7 +430,11 @@ def split_questions(text: str) -> list[tuple[int, str]]:
         sequential.append((number, match.end(), match.start()))
         expected += 1
 
-    accepted = sequential if len(sequential) >= max(20, int(len(first_seen) * 0.7)) else first_seen
+    accepted = (
+        sequential
+        if len(sequential) >= max(20, int(len(first_seen) * 0.7))
+        else first_seen
+    )
 
     chunks: list[tuple[int, str]] = []
     for idx, (number, start, _match_start) in enumerate(accepted):
@@ -397,7 +443,9 @@ def split_questions(text: str) -> list[tuple[int, str]]:
     return chunks
 
 
-def parse_question(number: int, chunk: str, answers: dict[int, int | None]) -> dict[str, Any]:
+def parse_question(
+    number: int, chunk: str, answers: dict[int, int | None]
+) -> dict[str, Any]:
     chunk = ANSWER_LINE.sub("\n", chunk)
     choice_matches = list(CHOICE_START.finditer(chunk))
     notes: list[str] = []
@@ -410,7 +458,11 @@ def parse_question(number: int, chunk: str, answers: dict[int, int | None]) -> d
         choices = []
         for idx, match in enumerate(choice_matches):
             start = match.end()
-            end = choice_matches[idx + 1].start() if idx + 1 < len(choice_matches) else len(chunk)
+            end = (
+                choice_matches[idx + 1].start()
+                if idx + 1 < len(choice_matches)
+                else len(chunk)
+            )
             choices.append(normalize_ws(chunk[start:end]))
 
     correct_choice = answers.get(number)
@@ -436,7 +488,9 @@ def find_entry(manifest: dict[str, Any], exam_id: str) -> ManifestEntry | None:
     return build_entry_index(manifest).get(exam_id)
 
 
-def build_exam_json(manifest: dict[str, Any], exam_id: str, exam_text_path: Path, answer_text_path: Path) -> dict[str, Any]:
+def build_exam_json(
+    manifest: dict[str, Any], exam_id: str, exam_text_path: Path, answer_text_path: Path
+) -> dict[str, Any]:
     entry = find_entry(manifest, exam_id)
     if entry is None:
         raise RuntimeError(f"unknown exam id: {exam_id}")
@@ -444,11 +498,18 @@ def build_exam_json(manifest: dict[str, Any], exam_id: str, exam_text_path: Path
     exam_text = exam_text_path.read_text(encoding="utf-8")
     answer_text = answer_text_path.read_text(encoding="utf-8")
     answers = parse_answer_key(answer_text)
-    questions = [parse_question(number, chunk, answers) for number, chunk in split_questions(exam_text)]
+    questions = [
+        parse_question(number, chunk, answers)
+        for number, chunk in split_questions(exam_text)
+    ]
 
     source_urls = []
     if entry.official_urls:
-        source_urls = [url for key, url in entry.official_urls.items() if key in {"exam", "answers", "procedure"}]
+        source_urls = [
+            url
+            for key, url in entry.official_urls.items()
+            if key in {"exam", "answers", "procedure"}
+        ]
 
     deck = {
         "id": entry.id,
@@ -463,7 +524,9 @@ def build_exam_json(manifest: dict[str, Any], exam_id: str, exam_text_path: Path
 
 def write_exam_json(output: dict[str, Any], out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out.write_text(
+        json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def cmd_parse(args: argparse.Namespace) -> int:
@@ -471,7 +534,9 @@ def cmd_parse(args: argparse.Namespace) -> int:
     output = build_exam_json(manifest, args.exam_id, args.exam_text, args.answer_text)
     write_exam_json(output, args.out)
     print(f"Wrote {len(output['questions'])} parsed question(s) to {args.out}")
-    print("Review status: all parser output is marked needs_review before .quiz conversion.")
+    print(
+        "Review status: all parser output is marked needs_review before .quiz conversion."
+    )
     return 0
 
 
@@ -480,9 +545,22 @@ def summarize_exam_json(path: Path) -> dict[str, Any]:
     questions = data.get("questions", [])
     choices_ok = sum(1 for q in questions if len(q.get("choices", [])) >= 2)
     choices_four = sum(1 for q in questions if len(q.get("choices", [])) == 4)
-    answer_ok = sum(1 for q in questions if "No official answer detected" not in q.get("review", {}).get("notes", []))
-    anulada = sum(1 for q in questions if "Official answer marks this question as anulada" in q.get("review", {}).get("notes", []))
-    answer_missing = sum(1 for q in questions if "No official answer detected" in q.get("review", {}).get("notes", []))
+    answer_ok = sum(
+        1
+        for q in questions
+        if "No official answer detected" not in q.get("review", {}).get("notes", [])
+    )
+    anulada = sum(
+        1
+        for q in questions
+        if "Official answer marks this question as anulada"
+        in q.get("review", {}).get("notes", [])
+    )
+    answer_missing = sum(
+        1
+        for q in questions
+        if "No official answer detected" in q.get("review", {}).get("notes", [])
+    )
     noted = sum(1 for q in questions if q.get("review", {}).get("notes"))
     return {
         "id": data.get("deck", {}).get("id", path.stem),
@@ -503,7 +581,10 @@ def cmd_parse_all(args: argparse.Namespace) -> int:
     json_dir = args.workdir / "json"
     exam_texts = sorted(text_dir.glob("*.exam.txt"))
     if not exam_texts:
-        print(f"No extracted exam text files found in {text_dir}. Run extract first.", file=sys.stderr)
+        print(
+            f"No extracted exam text files found in {text_dir}. Run extract first.",
+            file=sys.stderr,
+        )
         return 1
 
     failures = 0
@@ -535,7 +616,9 @@ def render_report_payload(args: argparse.Namespace) -> dict[str, Any]:
     manifest = load_manifest(args.manifest)
     summaries = load_parsed_exam_summaries(args.workdir, manifest)
     if not summaries:
-        raise RuntimeError(f"No parsed JSON files found in {args.workdir / 'json'}. Run parse-all first.")
+        raise RuntimeError(
+            f"No parsed JSON files found in {args.workdir / 'json'}. Run parse-all first."
+        )
     payload: dict[str, Any] = {
         "workdir": str(args.workdir),
         "parsed_exams": len(summaries),
@@ -605,7 +688,11 @@ def normalize_question(question: dict[str, Any], source_path: Path) -> dict[str,
     notes = list(question.get("review", {}).get("notes", []))
     correct_choice = question.get("correct_choice")
     if correct_choice is None:
-        answer_status = "annulled" if "Official answer marks this question as anulada" in notes else "missing"
+        answer_status = (
+            "annulled"
+            if "Official answer marks this question as anulada" in notes
+            else "missing"
+        )
         choice_id = None
     elif isinstance(correct_choice, int) and 0 <= correct_choice < len(choices):
         answer_status = "official"
@@ -640,7 +727,10 @@ def normalize_question(question: dict[str, Any], source_path: Path) -> dict[str,
 def normalize_exam(entry: ManifestEntry, source_path: Path) -> dict[str, Any]:
     policy = corpus_policy(entry.corpus)
     parsed = json.loads(source_path.read_text(encoding="utf-8"))
-    questions = [normalize_question(question, source_path) for question in parsed.get("questions", [])]
+    questions = [
+        normalize_question(question, source_path)
+        for question in parsed.get("questions", [])
+    ]
     parse_report = summarize_exam_json(source_path)
     parse_report["source_schema"] = parsed.get("schema")
 
@@ -648,7 +738,8 @@ def normalize_exam(entry: ManifestEntry, source_path: Path) -> dict[str, Any]:
         "schema": NORMALIZED_SCHEMA,
         "exam": {
             "id": entry.id,
-            "title": parsed.get("deck", {}).get("title") or f"{entry.jurisdiction} — {entry.category} — {entry.label}",
+            "title": parsed.get("deck", {}).get("title")
+            or f"{entry.jurisdiction} — {entry.category} — {entry.label}",
             "jurisdiction": entry.jurisdiction,
             "category": entry.category,
             "year": entry.year,
@@ -670,7 +761,10 @@ def cmd_normalize(args: argparse.Namespace) -> int:
     outdir = args.outdir or (args.workdir / DEFAULT_NORMALIZED_DIRNAME)
     paths = sorted(json_dir.glob("*.json"))
     if not paths:
-        print(f"No parsed JSON files found in {json_dir}. Run parse-all first.", file=sys.stderr)
+        print(
+            f"No parsed JSON files found in {json_dir}. Run parse-all first.",
+            file=sys.stderr,
+        )
         return 1
 
     selected_corpora = set(args.corpus) if args.corpus else None
@@ -685,7 +779,10 @@ def cmd_normalize(args: argparse.Namespace) -> int:
             continue
         if not is_corpus_selected(entry, selected_corpora):
             continue
-        if entry.corpus == EXCLUDED_ADJACENT_CORPUS and not args.include_adjacent_excluded:
+        if (
+            entry.corpus == EXCLUDED_ADJACENT_CORPUS
+            and not args.include_adjacent_excluded
+        ):
             skipped += 1
             continue
         normalized = normalize_exam(entry, path)
@@ -739,7 +836,9 @@ def summarize_normalized_exam(path: Path, data: dict[str, Any]) -> dict[str, Any
     }
 
 
-def build_review_item(exam_summary: dict[str, Any], question: dict[str, Any]) -> dict[str, Any]:
+def build_review_item(
+    exam_summary: dict[str, Any], question: dict[str, Any]
+) -> dict[str, Any]:
     prompt = question.get("prompt") or ""
     return {
         "exam_id": exam_summary["id"],
@@ -754,7 +853,9 @@ def build_review_item(exam_summary: dict[str, Any], question: dict[str, Any]) ->
     }
 
 
-def aggregate_review_queue_by_corpus(exams: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def aggregate_review_queue_by_corpus(
+    exams: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     grouped: dict[str, dict[str, Any]] = {}
     for exam in exams:
         corpus = exam.get("corpus") or "untracked"
@@ -785,7 +886,9 @@ def build_review_queue(args: argparse.Namespace) -> dict[str, Any]:
     normalized_dir = args.normalized_dir or (args.workdir / DEFAULT_NORMALIZED_DIRNAME)
     paths = sorted(normalized_dir.glob("*.json"))
     if not paths:
-        raise RuntimeError(f"No normalized JSON files found in {normalized_dir}. Run normalize first.")
+        raise RuntimeError(
+            f"No normalized JSON files found in {normalized_dir}. Run normalize first."
+        )
 
     selected_corpora = set(args.corpus) if args.corpus else None
     exams: list[dict[str, Any]] = []
@@ -822,8 +925,12 @@ def cmd_review_queue(args: argparse.Namespace) -> int:
     queue = build_review_queue(args)
     out = args.out or (args.workdir / "review_queue.json")
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(queue, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Wrote review queue with {queue['review_item_count']} item(s) from {queue['exam_count']} exam(s) to {out}")
+    out.write_text(
+        json.dumps(queue, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    print(
+        f"Wrote review queue with {queue['review_item_count']} item(s) from {queue['exam_count']} exam(s) to {out}"
+    )
     for corpus in queue["corpora"]:
         print(
             f"{corpus['corpus']}: exams={corpus['exams']} ready_questions={corpus['ready_questions']} "
@@ -866,23 +973,37 @@ def build_parser() -> argparse.ArgumentParser:
     )
     extract.set_defaults(func=cmd_extract)
 
-    parse = sub.add_parser("parse", help="parse one exam text and answer key into canonical JSON")
+    parse = sub.add_parser(
+        "parse", help="parse one exam text and answer key into canonical JSON"
+    )
     parse.add_argument("--exam-id", required=True)
     parse.add_argument("--exam-text", type=Path, required=True)
     parse.add_argument("--answer-text", type=Path, required=True)
     parse.add_argument("--out", type=Path, required=True)
     parse.set_defaults(func=cmd_parse)
 
-    parse_all = sub.add_parser("parse-all", help="parse every extracted exam/answer text pair into JSON")
+    parse_all = sub.add_parser(
+        "parse-all", help="parse every extracted exam/answer text pair into JSON"
+    )
     parse_all.set_defaults(func=cmd_parse_all)
 
     report = sub.add_parser("report", help="summarize parsed JSON coverage")
-    report.add_argument("--by-corpus", action="store_true", help="aggregate parsed quality metrics by manifest corpus")
-    report.add_argument("--json", action="store_true", help="emit report output as JSON")
+    report.add_argument(
+        "--by-corpus",
+        action="store_true",
+        help="aggregate parsed quality metrics by manifest corpus",
+    )
+    report.add_argument(
+        "--json", action="store_true", help="emit report output as JSON"
+    )
     report.set_defaults(func=cmd_report)
 
-    normalize = sub.add_parser("normalize", help="normalize parsed JSON into reader-quiz.exam-normalized.v1")
-    normalize.add_argument("--outdir", type=Path, help="output directory (default: <workdir>/normalized)")
+    normalize = sub.add_parser(
+        "normalize", help="normalize parsed JSON into reader-quiz.exam-normalized.v1"
+    )
+    normalize.add_argument(
+        "--outdir", type=Path, help="output directory (default: <workdir>/normalized)"
+    )
     normalize.add_argument(
         "--include-adjacent-excluded",
         action="store_true",
@@ -895,13 +1016,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     normalize.set_defaults(func=cmd_normalize)
 
-    review_queue = sub.add_parser("review-queue", help="build a review queue from normalized JSON files")
+    review_queue = sub.add_parser(
+        "review-queue", help="build a review queue from normalized JSON files"
+    )
     review_queue.add_argument(
         "--normalized-dir",
         type=Path,
         help="input directory (default: <workdir>/normalized)",
     )
-    review_queue.add_argument("--out", type=Path, help="output JSON file (default: <workdir>/review_queue.json)")
+    review_queue.add_argument(
+        "--out",
+        type=Path,
+        help="output JSON file (default: <workdir>/review_queue.json)",
+    )
     review_queue.add_argument(
         "--corpus",
         action="append",
