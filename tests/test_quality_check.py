@@ -36,6 +36,51 @@ class QualityCheckRunnerTests(unittest.TestCase):
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn("operation dispatch is unavailable", completed.stderr)
 
+    def test_repository_policy_rejects_forbidden_artifact_paths(self):
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = quality_check.main(
+                [
+                    "repository-policy",
+                    "build/output.elf",
+                    "scripts/nursing_ope_pipeline/corpus/session.json",
+                    "fixtures/generated.quiz",
+                ]
+            )
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "repository-policy rejected tracked artifacts: build/output.elf, fixtures/generated.quiz, scripts/nursing_ope_pipeline/corpus/session.json",
+        )
+
+    def test_repository_policy_allows_ordinary_source_paths(self):
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = quality_check.main(
+                [
+                    "repository-policy",
+                    "src/corpus_manager.cpp",
+                    "scripts/nursing_ope_pipeline/ope_corpus.py",
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_repository_policy_allows_tracked_canonical_quiz_fixture(self):
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = quality_check.main(
+                ["repository-policy", "test/quiz/fixtures/valid.quiz"]
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+
     def test_repository_policy_targets_use_tracked_paths_from_git_ls_files(self):
         targets = quality_check._repository_policy_targets(
             REPO_ROOT,
@@ -280,6 +325,104 @@ class QualityCheckRunnerTests(unittest.TestCase):
             "quality-check failed: QUALITY_CHECK_COMMAND_TIMEOUT_SECONDS must be a positive number",
         )
 
+    def test_plan_from_explicit_paths_runs_union_once(self):
+        observed = []
+
+        with mock.patch.object(
+            quality_check,
+            "run_commands",
+            side_effect=lambda commands, cwd: observed.append(commands) or 0,
+        ):
+            exit_code = quality_check.main(
+                [
+                    "paths",
+                    "tools/quiz/tests/test_convert_quiz.py",
+                    "src/main.cpp",
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(len(observed), 1)
+        self.assertEqual(
+            quality_check_plan_profiles(observed[0]),
+            list(plan.BROAD_SHARED_CHECKS),
+        )
+
+    def test_pre_push_rename_considers_source_and_destination_profiles(self):
+        observed = []
+
+        with (
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "parse_pre_push_stdin",
+                return_value=[
+                    quality_check.quality_check_git.PrePushRecord(
+                        "refs/heads/topic",
+                        "abcdef",
+                        "refs/heads/topic",
+                        "123456",
+                        "existing_update",
+                        "123456..abcdef",
+                    )
+                ],
+            ),
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "git_diff_name_status",
+                return_value=[
+                    quality_check.quality_check_git.NameStatusEntry(
+                        "R100",
+                        (b"README.md", b"src/main.cpp"),
+                    )
+                ],
+            ),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 0,
+            ),
+        ):
+            exit_code = quality_check._run_pre_push(REPO_ROOT, stdin_text="ignored")
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            quality_check_plan_profiles(observed[0]),
+            list(plan.BROAD_SHARED_CHECKS),
+        )
+
+    def test_pre_push_uses_git_backed_baseline_resolver_for_new_branch(self):
+        observed = []
+
+        with (
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "make_merge_base_resolver",
+                return_value=lambda local_ref, local_sha: "base123",
+            ) as make_resolver,
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "git_diff_name_status",
+                return_value=[
+                    quality_check.quality_check_git.NameStatusEntry(
+                        "M", (b"README.md",)
+                    )
+                ],
+            ),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 0,
+            ),
+        ):
+            exit_code = quality_check._run_pre_push(
+                REPO_ROOT,
+                stdin_text=f"refs/heads/topic abcdef refs/heads/topic {'0' * 40}\n",
+            )
+
+        self.assertEqual(exit_code, 0)
+        make_resolver.assert_called_once_with(str(REPO_ROOT))
+        self.assertEqual(quality_check_plan_profiles(observed[0]), ["validate"])
+
     def test_validate_operation_runs_all_non_mutating_quality_validators(self):
         with mock.patch.object(
             quality_check,
@@ -418,6 +561,52 @@ class QualityCheckRunnerTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertEqual(
             stderr.getvalue().strip(), "quality-check failed: command not found: cmake"
+        )
+
+    def test_main_paths_reports_invalid_explicit_path_without_traceback(self):
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = quality_check.main(["paths", "../secret.txt"])
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check input error: path escapes repository: ../secret.txt",
+        )
+
+    def test_pre_push_reports_malformed_pre_push_record_without_traceback(self):
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = quality_check._run_pre_push(REPO_ROOT, stdin_text="broken\n")
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check input error: invalid pre-push record: 'broken'",
+        )
+
+    def test_pre_push_reports_malformed_git_diff_without_traceback(self):
+        stderr = io.StringIO()
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "git_diff_name_status",
+                side_effect=ValueError("unsupported status: 'Q'"),
+            ),
+        ):
+            exit_code = quality_check._run_pre_push(
+                REPO_ROOT,
+                stdin_text="refs/heads/topic abcdef refs/heads/topic 123456\n",
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check input error: unsupported status: 'Q'",
         )
 
 

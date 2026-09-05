@@ -443,6 +443,76 @@ def run_commands(
     return 0
 
 
+def _plan_commands_from_paths(
+    paths: Sequence[str], repo_root: pathlib.Path
+) -> list[list[str]]:
+    plan = quality_check_plan.plan_for_paths(paths)
+    commands = []
+    python = _python_executable()
+    for operation in plan.checks:
+        if operation in {"format-check", "validate"}:
+            commands.append([python, "scripts/quality_check.py", operation])
+        else:
+            commands.extend(build_operation_commands(operation, repo_root))
+    return commands
+
+
+def _run_repository_policy(paths: Sequence[str]) -> int:
+    if not paths:
+        return 0
+    forbidden_paths = quality_check_plan.find_forbidden_policy_paths(paths)
+    if not forbidden_paths:
+        return 0
+    print(
+        "repository-policy rejected tracked artifacts: " + ", ".join(forbidden_paths),
+        file=sys.stderr,
+    )
+    return 1
+
+
+def _commands_for_rev_ranges(
+    repo_root: pathlib.Path, rev_ranges: Sequence[str]
+) -> list[list[str]]:
+    paths = []
+    for rev_range in rev_ranges:
+        paths.extend(
+            quality_check_git.decode_paths(
+                quality_check_git.git_diff_name_status(str(repo_root), rev_range)
+            )
+        )
+    return _plan_commands_from_paths(paths, repo_root)
+
+
+def _run_pre_push(
+    repo_root: pathlib.Path,
+    stdin_text: str | None = None,
+    merge_base_resolver=None,
+) -> int:
+    payload = sys.stdin.read() if stdin_text is None else stdin_text
+    resolver = merge_base_resolver or quality_check_git.make_merge_base_resolver(
+        str(repo_root)
+    )
+    try:
+        records = [
+            quality_check_git.resolve_pre_push_record(record, resolver)
+            for record in quality_check_git.parse_pre_push_stdin(payload)
+        ]
+        if any(record.fail_closed for record in records):
+            return run_commands(
+                build_operation_commands("complete", repo_root), repo_root
+            )
+        rev_ranges = [record.rev_range for record in records if record.rev_range]
+        if not rev_ranges:
+            return 0
+        return run_commands(_commands_for_rev_ranges(repo_root, rev_ranges), repo_root)
+    except ValueError as exc:
+        print(f"quality-check input error: {exc}", file=sys.stderr)
+        return 2
+    except (OSError, subprocess.CalledProcessError) as exc:
+        argv = exc.cmd if isinstance(exc, subprocess.CalledProcessError) else ["git"]
+        return _report_command_error(argv, exc)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
