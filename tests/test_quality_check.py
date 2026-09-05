@@ -272,9 +272,7 @@ class QualityCheckRunnerTests(unittest.TestCase):
 
         with contextlib.ExitStack() as stack:
             stack.enter_context(mock.patch.object(quality_check.os, "name", "posix"))
-            killpg = stack.enter_context(
-                mock.patch.object(quality_check.os, "killpg")
-            )
+            killpg = stack.enter_context(mock.patch.object(quality_check.os, "killpg"))
             stack.enter_context(
                 mock.patch.object(
                     quality_check.time, "monotonic", side_effect=[0.0, 5.0]
