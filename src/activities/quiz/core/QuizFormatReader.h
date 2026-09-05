@@ -1,7 +1,8 @@
 #pragma once
-#include "QuizFormat.h"
 #include <cstddef>
 #include <cstdint>
+
+#include "QuizFormat.h"
 
 namespace quiz {
 class QuizInput {
@@ -10,7 +11,15 @@ class QuizInput {
   virtual uint64_t size() const = 0;
   virtual bool read(uint64_t offset, void* dst, size_t len) = 0;
 };
-enum class QuizFormatError : uint8_t { Ok, ReadError, UnsupportedVersion, InvalidHeader, InvalidIndex, InvalidQuestion, InvalidText };
+enum class QuizFormatError : uint8_t {
+  Ok,
+  ReadError,
+  UnsupportedVersion,
+  InvalidHeader,
+  InvalidIndex,
+  InvalidQuestion,
+  InvalidText
+};
 class QuizFormatReader {
  public:
   explicit QuizFormatReader(QuizInput& input) : input_(input) {}

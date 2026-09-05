@@ -44,9 +44,7 @@ struct QuestionMeta {
   uint8_t correctChoiceIndex = 0;
 };
 
-uint16_t le16(const uint8_t* raw) {
-  return static_cast<uint16_t>(raw[0]) | (static_cast<uint16_t>(raw[1]) << 8);
-}
+uint16_t le16(const uint8_t* raw) { return static_cast<uint16_t>(raw[0]) | (static_cast<uint16_t>(raw[1]) << 8); }
 
 uint32_t le32(const uint8_t* raw) {
   return static_cast<uint32_t>(raw[0]) | (static_cast<uint32_t>(raw[1]) << 8) | (static_cast<uint32_t>(raw[2]) << 16) |
@@ -110,9 +108,8 @@ bool feedUtf8(Utf8State* state, const uint8_t* bytes, size_t len) {
 
     state->codePoint = (state->codePoint << 6) | (byte & 0x3F);
     --state->remainingBytes;
-    if (state->remainingBytes == 0 &&
-        (state->codePoint < state->minimumCodePoint || state->codePoint > 0x10FFFF ||
-         (state->codePoint >= 0xD800 && state->codePoint <= 0xDFFF))) {
+    if (state->remainingBytes == 0 && (state->codePoint < state->minimumCodePoint || state->codePoint > 0x10FFFF ||
+                                       (state->codePoint >= 0xD800 && state->codePoint <= 0xDFFF))) {
       return false;
     }
   }
@@ -148,7 +145,8 @@ bool loadText(QuizInput& input, uint32_t offset, uint16_t len, std::array<char, 
   return true;
 }
 
-bool readIndexEntry(QuizInput& input, uint32_t indexOffset, uint32_t ordinal, uint32_t* recordOffset, uint32_t* recordBytes) {
+bool readIndexEntry(QuizInput& input, uint32_t indexOffset, uint32_t ordinal, uint32_t* recordOffset,
+                    uint32_t* recordBytes) {
   uint8_t raw[kQuizIndexEntryBytes];
   const uint32_t entryOffset = indexOffset + ordinal * kQuizIndexEntryBytes;
   if (!readExact(input, entryOffset, raw, sizeof(raw))) {
@@ -181,9 +179,9 @@ QuizFormatError parseQuestionMeta(QuizInput& input, uint32_t offset, uint32_t re
   out->explanationBytes = le16(raw + kRecordExplanationLengthOffset);
   out->payloadBytes = le32(raw + kRecordPayloadLengthOffset);
 
-  if (recordHeaderSize != kQuizRecordHeaderBytes || out->choiceCount < kQuizMinChoices || out->choiceCount > kQuizMaxChoices ||
-      out->correctChoiceIndex >= out->choiceCount || out->promptBytes == 0 || out->promptBytes > kQuizMaxPromptBytes ||
-      out->explanationBytes > kQuizMaxExplanationBytes) {
+  if (recordHeaderSize != kQuizRecordHeaderBytes || out->choiceCount < kQuizMinChoices ||
+      out->choiceCount > kQuizMaxChoices || out->correctChoiceIndex >= out->choiceCount || out->promptBytes == 0 ||
+      out->promptBytes > kQuizMaxPromptBytes || out->explanationBytes > kQuizMaxExplanationBytes) {
     return QuizFormatError::InvalidQuestion;
   }
 
@@ -248,9 +246,9 @@ QuizFormatError parseDeck(QuizInput& input, QuizDeckInfo* out) {
   const uint32_t expectedIndexBytes = out->questionCount * kQuizIndexEntryBytes;
   const uint32_t expectedRecordsOffset = kQuizHeaderBytes + expectedIndexBytes;
 
-  if (headerSize != kQuizHeaderBytes || flags != 0 || out->declaredFileSize != inputSize || out->indexOffset != kQuizHeaderBytes ||
-      out->indexBytes != expectedIndexBytes || out->recordsOffset != expectedRecordsOffset ||
-      indexEntrySize != kQuizIndexEntryBytes || out->titleBytes == 0 ||
+  if (headerSize != kQuizHeaderBytes || flags != 0 || out->declaredFileSize != inputSize ||
+      out->indexOffset != kQuizHeaderBytes || out->indexBytes != expectedIndexBytes ||
+      out->recordsOffset != expectedRecordsOffset || indexEntrySize != kQuizIndexEntryBytes || out->titleBytes == 0 ||
       out->titleBytes > kQuizMaxTitleBytes || allZero(raw + kHeaderDeckIdentityOffset, kQuizIdentityBytes) ||
       allZero(raw + kHeaderRevisionIdentityOffset, kQuizIdentityBytes) ||
       !allZero(raw + kHeaderTitleStorageOffset + out->titleBytes, kQuizMaxTitleBytes - out->titleBytes) ||
@@ -332,7 +330,8 @@ QuizFormatError QuizFormatReader::validate(QuizDeckInfo* outDeck) {
   return nextRecordOffset == recordsLimit ? QuizFormatError::Ok : QuizFormatError::InvalidIndex;
 }
 
-QuizFormatError QuizFormatReader::loadQuestion(const QuizDeckInfo& deck, uint32_t ordinal, QuizQuestionData* outQuestion) {
+QuizFormatError QuizFormatReader::loadQuestion(const QuizDeckInfo& deck, uint32_t ordinal,
+                                               QuizQuestionData* outQuestion) {
   if (outQuestion == nullptr || ordinal >= deck.questionCount) {
     return QuizFormatError::InvalidIndex;
   }
@@ -344,7 +343,8 @@ QuizFormatError QuizFormatReader::loadQuestion(const QuizDeckInfo& deck, uint32_
   }
 
   uint32_t recordEnd = 0;
-  if (recordOffset < deck.recordsOffset || !addWithin(recordOffset, recordBytes, deck.recordsOffset + deck.recordsBytes, &recordEnd) ||
+  if (recordOffset < deck.recordsOffset ||
+      !addWithin(recordOffset, recordBytes, deck.recordsOffset + deck.recordsBytes, &recordEnd) ||
       recordEnd <= recordOffset) {
     return QuizFormatError::InvalidIndex;
   }
