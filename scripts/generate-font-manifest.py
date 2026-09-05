@@ -20,14 +20,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import struct
 import sys
 import zlib
 from pathlib import Path
 
 # Import canonical version constants from the shared file in lib/EpdFont/scripts/
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib" / "EpdFont" / "scripts"))
+sys.path.insert(
+    0, str(Path(__file__).resolve().parent.parent / "lib" / "EpdFont" / "scripts")
+)
 from cpfont_version import CPFONT_VERSION, FONTS_MANIFEST_VERSION
 
 # --- .cpfont binary format constants ---
@@ -54,13 +55,20 @@ def load_descriptions_from_yaml(yaml_path: Path) -> dict[str, str]:
     try:
         import yaml
     except ImportError:
-        print("WARNING: pyyaml not installed, cannot load descriptions from YAML", file=sys.stderr)
+        print(
+            "WARNING: pyyaml not installed, cannot load descriptions from YAML",
+            file=sys.stderr,
+        )
         return {}
 
     with open(yaml_path) as f:
         config = yaml.safe_load(f)
 
-    return {f["name"]: f["description"] for f in config.get("families", []) if "description" in f}
+    return {
+        f["name"]: f["description"]
+        for f in config.get("families", [])
+        if "description" in f
+    }
 
 
 def read_cpfont_styles(filepath: Path) -> list[str]:
@@ -139,7 +147,10 @@ def scan_cpfont_files(input_dir: Path) -> dict[str, list[Path]]:
             continue
         parsed = parse_filename(path.name)
         if parsed is None:
-            print(f"  WARNING: skipping {path.name} (unexpected filename format)", file=sys.stderr)
+            print(
+                f"  WARNING: skipping {path.name} (unexpected filename format)",
+                file=sys.stderr,
+            )
             continue
         family_name = parsed[0]
         families.setdefault(family_name, []).append(path)
@@ -147,9 +158,7 @@ def scan_cpfont_files(input_dir: Path) -> dict[str, list[Path]]:
     return families
 
 
-def build_manifest(
-    families: dict[str, list[Path]], base_url: str
-) -> dict:
+def build_manifest(families: dict[str, list[Path]], base_url: str) -> dict:
     """Build the manifest dict from discovered font families."""
     manifest_families = []
 
@@ -240,7 +249,10 @@ def main():
             FAMILY_DESCRIPTIONS = load_descriptions_from_yaml(desc_path)
             print(f"Loaded {len(FAMILY_DESCRIPTIONS)} descriptions from {desc_path}")
         else:
-            print(f"WARNING: {desc_path} not found, using family names as descriptions", file=sys.stderr)
+            print(
+                f"WARNING: {desc_path} not found, using family names as descriptions",
+                file=sys.stderr,
+            )
 
     print(f"Scanning {input_dir} for .cpfont files...")
     families = scan_cpfont_files(input_dir)
