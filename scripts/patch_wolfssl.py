@@ -1,9 +1,9 @@
 from pathlib import Path
 
-Import("env")
+Import("env")  # noqa: F821  # type: ignore[name-defined]
 
 
-PROJECT_DIR = Path(env.subst("$PROJECT_DIR"))
+PROJECT_DIR = Path(env.subst("$PROJECT_DIR"))  # noqa: F821  # type: ignore[name-defined]
 MARKER = "/* CrossPoint wolfSSL compatibility overrides */"
 OVERRIDES = f"""
 

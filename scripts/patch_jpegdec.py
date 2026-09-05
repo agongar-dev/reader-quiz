@@ -21,7 +21,6 @@ import os
 import subprocess
 import sys
 
-
 PATCH_DIR = os.path.join(env["PROJECT_DIR"], "scripts", "jpegdec_patches")  # noqa: F821
 
 
@@ -41,8 +40,7 @@ def patch_jpegdec(env):
 def _patch_files():
     if not os.path.isdir(PATCH_DIR):
         raise RuntimeError(
-            "JPEGDEC patches missing -- aborting build (expected directory %s)"
-            % PATCH_DIR
+            f"JPEGDEC patches missing -- aborting build (expected directory {PATCH_DIR})"
         )
     patches = sorted(
         os.path.join(PATCH_DIR, name)
@@ -51,8 +49,7 @@ def _patch_files():
     )
     if not patches:
         raise RuntimeError(
-            "JPEGDEC patches missing -- aborting build (no .patch files in %s)"
-            % PATCH_DIR
+            f"JPEGDEC patches missing -- aborting build (no .patch files in {PATCH_DIR})"
         )
     return patches
 
@@ -69,14 +66,15 @@ def _apply_one(jpeg_dir, patch_path):
             cwd=jpeg_dir,
             capture_output=True,
             text=True,
+            check=False,
         )
         sys.stderr.write(
-            "ERROR: JPEGDEC patch %s does not apply cleanly:\n%s%s\n"
-            % (name, result.stdout, result.stderr)
+            f"ERROR: JPEGDEC patch {name} does not apply cleanly:\n"
+            f"{result.stdout}{result.stderr}\n"
         )
         raise SystemExit(1)
     subprocess.run(["git", "apply", patch_path], cwd=jpeg_dir, check=True)
-    print("Applied JPEGDEC patch: %s" % name)
+    print(f"Applied JPEGDEC patch: {name}")
 
 
 def _git_apply_succeeds(jpeg_dir, patch_path, *, reverse):
@@ -84,9 +82,16 @@ def _git_apply_succeeds(jpeg_dir, patch_path, *, reverse):
     if reverse:
         cmd.append("--reverse")
     cmd.append(patch_path)
-    return subprocess.run(
-        cmd, cwd=jpeg_dir, capture_output=True, text=True
-    ).returncode == 0
+    return (
+        subprocess.run(
+            cmd,
+            cwd=jpeg_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+        ).returncode
+        == 0
+    )
 
 
 patch_jpegdec(env)  # noqa: F821
