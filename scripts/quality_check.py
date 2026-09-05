@@ -275,6 +275,174 @@ def build_operation_commands(
     return _build_external_commands(operation, root_path)
 
 
+def _report_command_error(
+    argv: Sequence[str], exc: OSError | subprocess.CalledProcessError | RuntimeError
+) -> int:
+    if isinstance(exc, FileNotFoundError):
+        print(f"quality-check failed: command not found: {argv[0]}", file=sys.stderr)
+        return 1
+    if isinstance(exc, RuntimeError):
+        print(f"quality-check failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"quality-check failed: {' '.join(argv)}", file=sys.stderr)
+    if isinstance(exc, subprocess.CalledProcessError):
+        return int(exc.returncode) or 1
+    return 1
+
+
+def _positive_seconds(env: dict[str, str], name: str, default: float) -> float:
+    raw_value = env.get(name)
+    if raw_value is None:
+        return default
+    try:
+        value = float(raw_value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a positive number") from exc
+    if not math.isfinite(value) or value <= 0:
+        raise RuntimeError(f"{name} must be a positive number")
+    return value
+
+
+def _wait_remaining_grace(started_at: float) -> None:
+    remaining = PROCESS_TERMINATION_GRACE_SECONDS - (time.monotonic() - started_at)
+    if remaining > 0:
+        time.sleep(remaining)
+
+
+def _terminate_process_group(process: subprocess.Popen) -> None:
+    if os.name == "nt":
+        started_at = time.monotonic()
+        try:
+            process.send_signal(subprocess.CTRL_BREAK_EVENT)
+            process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        _wait_remaining_grace(started_at)
+        try:
+            completed = subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                check=False,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=PROCESS_TERMINATION_GRACE_SECONDS,
+            )
+            if completed.returncode and process.poll() is None:
+                process.kill()
+        except (OSError, subprocess.TimeoutExpired):
+            if process.poll() is None:
+                process.kill()
+        try:
+            process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        return
+
+    started_at = time.monotonic()
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    try:
+        process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        pass
+    _wait_remaining_grace(started_at)
+
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return
+    try:
+        process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def _run_command(
+    argv: Sequence[str],
+    cwd: pathlib.Path | str,
+    env: dict[str, str],
+    timeout_seconds: float,
+    heartbeat_seconds: float,
+) -> None:
+    popen_kwargs = {
+        "cwd": str(cwd),
+        "shell": False,
+        "env": env,
+        "stdin": subprocess.DEVNULL,
+    }
+    if os.name == "nt":
+        popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        popen_kwargs["start_new_session"] = True
+
+    process = subprocess.Popen(list(argv), **popen_kwargs)
+    started_at = time.monotonic()
+    while True:
+        elapsed = time.monotonic() - started_at
+        remaining = timeout_seconds - elapsed
+        if remaining <= 0:
+            _terminate_process_group(process)
+            raise RuntimeError(
+                f"command timed out after {timeout_seconds:g}s: {' '.join(argv)}"
+            )
+        try:
+            return_code = process.wait(timeout=min(heartbeat_seconds, remaining))
+        except subprocess.TimeoutExpired:
+            elapsed = time.monotonic() - started_at
+            if elapsed >= timeout_seconds:
+                _terminate_process_group(process)
+                raise RuntimeError(
+                    f"command timed out after {timeout_seconds:g}s: {' '.join(argv)}"
+                )
+            print(
+                f"quality-check heartbeat: still running after {elapsed:g}s: {' '.join(argv)}",
+                file=sys.stderr,
+                flush=True,
+            )
+            continue
+
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, list(argv))
+        return
+
+
+def run_commands(
+    commands: Iterable[Sequence[str]],
+    cwd: pathlib.Path | str,
+    env: dict[str, str] | None = None,
+) -> int:
+    command_env = os.environ.copy()
+    if env:
+        command_env.update(env)
+    command_env["GIT_TERMINAL_PROMPT"] = "0"
+    command_env["PIP_NO_INPUT"] = "1"
+
+    try:
+        timeout_seconds = _positive_seconds(
+            command_env, COMMAND_TIMEOUT_ENV, DEFAULT_COMMAND_TIMEOUT_SECONDS
+        )
+        heartbeat_seconds = _positive_seconds(
+            command_env, HEARTBEAT_INTERVAL_ENV, DEFAULT_HEARTBEAT_SECONDS
+        )
+    except RuntimeError as exc:
+        return _report_command_error([], exc)
+
+    for argv in commands:
+        try:
+            _run_command(
+                argv,
+                cwd,
+                command_env,
+                timeout_seconds,
+                heartbeat_seconds,
+            )
+        except (OSError, subprocess.CalledProcessError, RuntimeError) as exc:
+            return _report_command_error(list(argv), exc)
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
@@ -290,4 +458,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

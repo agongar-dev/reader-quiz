@@ -2,7 +2,6 @@ import contextlib
 import importlib.util
 import io
 import pathlib
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -130,6 +129,157 @@ class QualityCheckRunnerTests(unittest.TestCase):
             ],
         )
 
+    def test_plan_execution_uses_process_groups_and_stops_on_failure(self):
+        processes = [mock.Mock(), mock.Mock()]
+        processes[0].wait.return_value = 0
+        processes[1].wait.return_value = 2
+
+        with mock.patch.object(
+            quality_check.subprocess, "Popen", side_effect=processes
+        ) as popen:
+            exit_code = quality_check.run_commands(
+                quality_check.build_operation_commands("host-tests", REPO_ROOT),
+                REPO_ROOT,
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(popen.call_count, 2)
+        first_argv, first_kwargs = popen.call_args_list[0]
+        self.assertIsInstance(first_argv[0], list)
+        self.assertFalse(first_kwargs["shell"])
+        self.assertIs(first_kwargs["stdin"], quality_check.subprocess.DEVNULL)
+        self.assertEqual(first_kwargs["env"]["GIT_TERMINAL_PROMPT"], "0")
+        self.assertEqual(first_kwargs["env"]["PIP_NO_INPUT"], "1")
+        if quality_check.os.name == "nt":
+            self.assertEqual(
+                first_kwargs["creationflags"],
+                quality_check.subprocess.CREATE_NEW_PROCESS_GROUP,
+            )
+        else:
+            self.assertTrue(first_kwargs["start_new_session"])
+
+    def test_active_command_emits_periodic_heartbeat(self):
+        process = mock.Mock()
+        process.wait.side_effect = [
+            quality_check.subprocess.TimeoutExpired(["slow-command"], 5.0),
+            0,
+        ]
+        stderr = io.StringIO()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(
+                mock.patch.object(
+                    quality_check.subprocess, "Popen", return_value=process
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    quality_check.time,
+                    "monotonic",
+                    side_effect=[0.0, 0.0, 5.0, 5.0],
+                )
+            )
+            stack.enter_context(contextlib.redirect_stderr(stderr))
+            exit_code = quality_check.run_commands(
+                [["slow-command"]],
+                REPO_ROOT,
+                env={
+                    "QUALITY_CHECK_COMMAND_TIMEOUT_SECONDS": "60",
+                    "QUALITY_CHECK_HEARTBEAT_SECONDS": "5",
+                },
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn(
+            "quality-check heartbeat: still running after 5s: slow-command",
+            stderr.getvalue(),
+        )
+
+    def test_command_timeout_terminates_process_group(self):
+        process = mock.Mock()
+        process.wait.side_effect = quality_check.subprocess.TimeoutExpired(
+            ["stuck-command"], 1.0
+        )
+        stderr = io.StringIO()
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(
+                mock.patch.object(
+                    quality_check.subprocess, "Popen", return_value=process
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    quality_check.time, "monotonic", side_effect=[0.0, 0.0, 2.0]
+                )
+            )
+            terminate = stack.enter_context(
+                mock.patch.object(quality_check, "_terminate_process_group")
+            )
+            stack.enter_context(contextlib.redirect_stderr(stderr))
+            exit_code = quality_check.run_commands(
+                [["stuck-command"]],
+                REPO_ROOT,
+                env={
+                    "QUALITY_CHECK_COMMAND_TIMEOUT_SECONDS": "1",
+                    "QUALITY_CHECK_HEARTBEAT_SECONDS": "1",
+                },
+            )
+
+        self.assertEqual(exit_code, 1)
+        terminate.assert_called_once_with(process)
+        self.assertIn(
+            "quality-check failed: command timed out after 1s: stuck-command",
+            stderr.getvalue(),
+        )
+
+    def test_posix_process_group_termination_escalates_after_grace(self):
+        process = mock.Mock(pid=123)
+        process.wait.side_effect = [0, 0]
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(quality_check.os, "name", "posix"))
+            killpg = stack.enter_context(
+                mock.patch.object(quality_check.os, "killpg")
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    quality_check.time, "monotonic", side_effect=[0.0, 5.0]
+                )
+            )
+            sleep = stack.enter_context(mock.patch.object(quality_check.time, "sleep"))
+            quality_check._terminate_process_group(process)
+
+        self.assertEqual(
+            killpg.call_args_list,
+            [
+                mock.call(123, quality_check.signal.SIGTERM),
+                mock.call(123, quality_check.signal.SIGKILL),
+            ],
+        )
+        sleep.assert_not_called()
+
+    def test_invalid_command_timing_configuration_fails_closed(self):
+        stderr = io.StringIO()
+
+        with contextlib.ExitStack() as stack:
+            popen = stack.enter_context(
+                mock.patch.object(quality_check.subprocess, "Popen")
+            )
+            stack.enter_context(contextlib.redirect_stderr(stderr))
+            exit_code = quality_check.run_commands(
+                [["unused-command"]],
+                REPO_ROOT,
+                env={"QUALITY_CHECK_COMMAND_TIMEOUT_SECONDS": "0"},
+            )
+
+        self.assertEqual(exit_code, 1)
+        popen.assert_not_called()
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check failed: QUALITY_CHECK_COMMAND_TIMEOUT_SECONDS must be a positive number",
+        )
+
     def test_validate_operation_runs_all_non_mutating_quality_validators(self):
         with mock.patch.object(
             quality_check,
@@ -251,6 +401,24 @@ class QualityCheckRunnerTests(unittest.TestCase):
             ],
         )
         self.assertEqual(quality_check.command_env_for_operation("host-tests"), {})
+
+    def test_run_commands_reports_missing_tool_without_traceback(self):
+        stderr = io.StringIO()
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check.subprocess,
+                "Popen",
+                side_effect=FileNotFoundError("cmake"),
+            ),
+        ):
+            exit_code = quality_check.run_commands([["cmake", "--version"]], REPO_ROOT)
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(
+            stderr.getvalue().strip(), "quality-check failed: command not found: cmake"
+        )
 
 
 if __name__ == "__main__":
