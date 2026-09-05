@@ -24,18 +24,6 @@ plan = load_module("quality_check_plan", "scripts/quality_check_plan.py")
 
 
 class QualityCheckRunnerTests(unittest.TestCase):
-    def test_direct_execution_fails_closed_until_dispatch_is_available(self):
-        completed = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts/quality_check.py"), "format-check"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-        self.assertNotEqual(completed.returncode, 0)
-        self.assertIn("operation dispatch is unavailable", completed.stderr)
-
     def test_repository_policy_rejects_forbidden_artifact_paths(self):
         stderr = io.StringIO()
 
@@ -563,6 +551,31 @@ class QualityCheckRunnerTests(unittest.TestCase):
             stderr.getvalue().strip(), "quality-check failed: command not found: cmake"
         )
 
+    def test_clang_format_check_reports_too_old_version_without_traceback(self):
+        stderr = io.StringIO()
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check.subprocess,
+                "run",
+                return_value=mock.Mock(stdout="clang-format version 20.1.0", stderr=""),
+            ),
+        ):
+            exit_code = quality_check.main(
+                [
+                    "clang-format-check-files",
+                    "clang-format-21|clang-format",
+                    "src/main.cpp",
+                ]
+            )
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check failed: clang-format-21 must be version 21 or newer (clang-format version 20.1.0)",
+        )
+
     def test_main_paths_reports_invalid_explicit_path_without_traceback(self):
         stderr = io.StringIO()
 
@@ -608,6 +621,296 @@ class QualityCheckRunnerTests(unittest.TestCase):
             stderr.getvalue().strip(),
             "quality-check input error: unsupported status: 'Q'",
         )
+
+    def test_managed_pre_push_uses_docs_only_range_from_env(self):
+        observed = []
+
+        with (
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "git_diff_name_status",
+                return_value=[
+                    quality_check.quality_check_git.NameStatusEntry(
+                        "M", (b"README.md",)
+                    )
+                ],
+            ),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 0,
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={
+                    "PRE_COMMIT_FROM_REF": "base123",
+                    "PRE_COMMIT_TO_REF": "head456",
+                },
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(quality_check_plan_profiles(observed[0]), ["validate"])
+
+    def test_managed_pre_push_rename_escalates_from_source_and_destination(self):
+        observed = []
+
+        with (
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "git_diff_name_status",
+                return_value=[
+                    quality_check.quality_check_git.NameStatusEntry(
+                        "R100",
+                        (b"README.md", b"src/main.cpp"),
+                    )
+                ],
+            ),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 0,
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={
+                    "PRE_COMMIT_FROM_REF": "base123",
+                    "PRE_COMMIT_TO_REF": "head456",
+                },
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            quality_check_plan_profiles(observed[0]),
+            list(plan.BROAD_SHARED_CHECKS),
+        )
+
+    def test_managed_pre_push_without_range_returns_complete_profile_result(self):
+        stderr = io.StringIO()
+        observed = []
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 0,
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(REPO_ROOT, env={})
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check managed pre-push: range unavailable; running complete profile",
+        )
+        self.assertEqual(
+            quality_check_plan_profiles(observed[0]),
+            list(plan.BROAD_SHARED_CHECKS),
+        )
+
+    def test_managed_pre_push_without_range_propagates_complete_profile_failure(self):
+        stderr = io.StringIO()
+        observed = []
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 7,
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(REPO_ROOT, env={})
+
+        self.assertEqual(exit_code, 7)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check managed pre-push: range unavailable; running complete profile",
+        )
+        self.assertEqual(
+            quality_check_plan_profiles(observed[0]),
+            list(plan.BROAD_SHARED_CHECKS),
+        )
+
+    def test_managed_pre_push_all_zero_from_and_to_falls_back_to_complete_profile(self):
+        stderr = io.StringIO()
+        observed = []
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 0,
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={
+                    "PRE_COMMIT_FROM_REF": "0" * 40,
+                    "PRE_COMMIT_TO_REF": "0" * 40,
+                },
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check managed pre-push: range unavailable; running complete profile",
+        )
+        self.assertEqual(
+            quality_check_plan_profiles(observed[0]),
+            list(plan.BROAD_SHARED_CHECKS),
+        )
+
+    def test_managed_pre_push_zero_from_real_to_falls_back_to_complete_profile(self):
+        stderr = io.StringIO()
+        observed = []
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check,
+                "run_commands",
+                side_effect=lambda commands, cwd: observed.append(commands) or 0,
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={
+                    "PRE_COMMIT_FROM_REF": "0" * 40,
+                    "PRE_COMMIT_TO_REF": "head456",
+                },
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check managed pre-push: range unavailable; running complete profile",
+        )
+        self.assertEqual(
+            quality_check_plan_profiles(observed[0]),
+            list(plan.BROAD_SHARED_CHECKS),
+        )
+
+    def test_managed_pre_push_rejects_partial_range_env(self):
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={"PRE_COMMIT_FROM_REF": "base123"},
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check input error: managed pre-push requires both PRE_COMMIT_FROM_REF and PRE_COMMIT_TO_REF",
+        )
+
+    def test_managed_pre_push_reports_malformed_git_diff_without_traceback(self):
+        stderr = io.StringIO()
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "git_diff_name_status",
+                side_effect=ValueError("unsupported status: 'Q'"),
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={
+                    "PRE_COMMIT_FROM_REF": "base123",
+                    "PRE_COMMIT_TO_REF": "head456",
+                },
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check input error: unsupported status: 'Q'",
+        )
+
+    def test_managed_pre_push_reports_git_failure_without_traceback(self):
+        stderr = io.StringIO()
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            mock.patch.object(
+                quality_check.quality_check_git,
+                "git_diff_name_status",
+                side_effect=quality_check.subprocess.CalledProcessError(
+                    returncode=7,
+                    cmd=["git", "diff", "--name-status", "-z", "base123..head456"],
+                ),
+            ),
+        ):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={
+                    "PRE_COMMIT_FROM_REF": "base123",
+                    "PRE_COMMIT_TO_REF": "head456",
+                },
+            )
+
+        self.assertEqual(exit_code, 7)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check failed: git diff --name-status -z base123..head456",
+        )
+
+    def test_managed_pre_push_rejects_whitespace_refs(self):
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            exit_code = quality_check._run_managed_pre_push(
+                REPO_ROOT,
+                env={
+                    "PRE_COMMIT_FROM_REF": "base 123",
+                    "PRE_COMMIT_TO_REF": "head456",
+                },
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(
+            stderr.getvalue().strip(),
+            "quality-check input error: managed pre-push range refs must not contain whitespace",
+        )
+
+
+def quality_check_plan_profiles(commands):
+    operations = []
+    for command in commands:
+        if (
+            command[:5] == ["python", "-m", "ruff", "format", "--check"]
+            or command[:3]
+            == ["python", "scripts/quality_check.py", "clang-format-check"]
+            or command[:3] == ["python", "scripts/quality_check.py", "format-check"]
+        ):
+            operations.append("format-check")
+        elif command[:2] == ["cmake", "-S"]:
+            operations.append("host-tests")
+        elif command[:2] == ["python", "-m"] and "unittest" in command:
+            operations.append("python-tests")
+        elif command[:2] == ["pio", "check"]:
+            operations.append("static-analysis")
+        elif command[:2] == ["pio", "run"]:
+            operations.append("firmware-build")
+        elif command[:4] == [
+            "python",
+            "-m",
+            "py_compile",
+            "scripts/quality_check.py",
+        ] or command[:3] == ["python", "scripts/quality_check.py", "validate"]:
+            operations.append("validate")
+    seen = []
+    for item in operations:
+        if item not in seen:
+            seen.append(item)
+    return seen
 
 
 if __name__ == "__main__":

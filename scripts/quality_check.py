@@ -513,17 +513,108 @@ def _run_pre_push(
         return _report_command_error(argv, exc)
 
 
+def _run_managed_pre_push(
+    repo_root: pathlib.Path,
+    env: dict[str, str] | None = None,
+) -> int:
+    managed_env = os.environ if env is None else env
+    try:
+        rev_range = quality_check_git.resolve_managed_pre_push_range(managed_env)
+    except ValueError as exc:
+        if str(exc) == "managed pre-push range unavailable":
+            print(
+                "quality-check managed pre-push: range unavailable; running complete profile",
+                file=sys.stderr,
+            )
+            return run_commands(
+                build_operation_commands("complete", repo_root), repo_root
+            )
+        print(f"quality-check input error: {exc}", file=sys.stderr)
+        return 2
+
+    try:
+        return run_commands(_commands_for_rev_ranges(repo_root, [rev_range]), repo_root)
+    except ValueError as exc:
+        print(f"quality-check input error: {exc}", file=sys.stderr)
+        return 2
+    except (OSError, subprocess.CalledProcessError) as exc:
+        argv = exc.cmd if isinstance(exc, subprocess.CalledProcessError) else ["git"]
+        return _report_command_error(argv, exc)
+
+
+def _clang_format_binary() -> str:
+    for candidate in ("clang-format-21", "clang-format"):
+        try:
+            completed = subprocess.run(
+                [candidate, "--version"],
+                check=True,
+                cwd=str(REPO_ROOT),
+                shell=False,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            continue
+        version_text = completed.stdout.strip() or completed.stderr.strip()
+        match = re.search(r"(\d+)", version_text)
+        if not match or int(match.group(1)) < 21:
+            raise RuntimeError(
+                f"{candidate} must be version 21 or newer ({version_text or 'unknown version'})"
+            )
+        return candidate
+    raise RuntimeError("clang-format-21 or clang-format 21+ is required")
+
+
+def _run_clang_format_check_files(paths: Sequence[str]) -> int:
+    if not paths:
+        return 0
+    selector, *targets = list(paths)
+    del selector
+    try:
+        binary = _clang_format_binary()
+        return run_commands(
+            [[binary, "--dry-run", "--Werror", "-style=file", *targets]], REPO_ROOT
+        )
+    except RuntimeError as exc:
+        return _report_command_error(["clang-format"], exc)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    repo_root = REPO_ROOT
     if not args:
-        print("usage: quality_check.py <operation>", file=sys.stderr)
+        print("usage: quality_check.py <operation>|paths <path...>", file=sys.stderr)
         return 2
     command = args[0]
-    if command not in OPERATIONS:
-        print(f"unknown operation: {command}", file=sys.stderr)
+    try:
+        if command == "paths":
+            if len(args) < 2:
+                print("paths requires at least one explicit path", file=sys.stderr)
+                return 2
+            return run_commands(
+                _plan_commands_from_paths(args[1:], repo_root), repo_root
+            )
+        if command == "repository-policy":
+            return _run_repository_policy(args[1:])
+        if command == "pre-push":
+            return _run_pre_push(repo_root)
+        if command == "managed-pre-push":
+            return _run_managed_pre_push(repo_root)
+        if command == "clang-format-check-files":
+            return _run_clang_format_check_files(args[1:])
+        if command not in OPERATIONS:
+            print(f"unknown operation: {command}", file=sys.stderr)
+            return 2
+        return run_commands(
+            build_operation_commands(command, repo_root),
+            repo_root,
+            env=command_env_for_operation(command),
+        )
+    except ValueError as exc:
+        print(f"quality-check input error: {exc}", file=sys.stderr)
         return 2
-    print(f"quality-check operation dispatch is unavailable: {command}", file=sys.stderr)
-    return 2
+    except RuntimeError as exc:
+        return _report_command_error(["git"], exc)
 
 
 if __name__ == "__main__":
