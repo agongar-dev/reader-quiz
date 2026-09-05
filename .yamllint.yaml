@@ -1,0 +1,10 @@
+extends: default
+
+ignore: |
+  lib/**
+  corpus/**
+
+rules:
+  document-start: disable
+  line-length: disable
+  truthy: disable
