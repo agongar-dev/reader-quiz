@@ -4,6 +4,8 @@ import pathlib
 import unittest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
 def load_simple_toml(path: pathlib.Path) -> dict[str, object]:
     config: dict[str, object] = {}
     section: dict[str, str] | None = None
